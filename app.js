@@ -2,6 +2,7 @@ const DEFAULT_SETTINGS = {
   color: '#FF2D20',
   font: 'sans',
   brightness: 100,
+  zoom: 100,
   format: '12'
 };
 
@@ -20,6 +21,10 @@ const FONT_MAP = {
   },
   serif: {
     family: "'Playfair Display', Georgia, 'Times New Roman', serif",
+    weight: '400'
+  },
+  segment: {
+    family: "'DSEG7 Classic', monospace",
     weight: '400'
   }
 };
@@ -48,6 +53,9 @@ const minutesEl = document.getElementById('minutes');
 const ampmEl = document.getElementById('ampm');
 const settingsDrawer = document.getElementById('settings-drawer');
 const closeDrawerBtn = document.getElementById('close-drawer-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+const fullscreenExpandIcon = document.getElementById('fullscreen-expand-icon');
+const fullscreenCompressIcon = document.getElementById('fullscreen-compress-icon');
 const wakelockDot = document.getElementById('wakelock-dot');
 const wakelockText = document.getElementById('wakelock-text');
 const colorSwatches = document.querySelectorAll('.color-swatch');
@@ -57,6 +65,8 @@ const fontButtons = document.querySelectorAll('#font-options .segment-btn');
 const formatButtons = document.querySelectorAll('#format-options .segment-btn');
 const brightnessSlider = document.getElementById('brightness-slider');
 const brightnessValue = document.getElementById('brightness-value');
+const zoomSlider = document.getElementById('zoom-slider');
+const zoomValue = document.getElementById('zoom-value');
 
 let wakeLock = null;
 let hideTimer = null;
@@ -221,6 +231,18 @@ function applyBrightness(val, persist = true) {
   }
 }
 
+function applyZoom(val, persist = true) {
+  const num = Math.min(150, Math.max(60, parseInt(val, 10) || 100));
+  settings.zoom = num;
+  document.documentElement.style.setProperty('--clock-zoom', (num / 100).toFixed(2));
+  zoomSlider.value = num;
+  zoomValue.textContent = `${num}%`;
+
+  if (persist) {
+    saveSettings();
+  }
+}
+
 function applyFormat(format, persist = true) {
   settings.format = format;
   formatButtons.forEach(btn => {
@@ -238,12 +260,48 @@ function applyFormat(format, persist = true) {
   }
 }
 
+function isFullscreen() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+function toggleFullscreen() {
+  if (!isFullscreen()) {
+    const docEl = document.documentElement;
+    if (docEl.requestFullscreen) {
+      docEl.requestFullscreen().catch(() => {});
+    } else if (docEl.webkitRequestFullscreen) {
+      docEl.webkitRequestFullscreen();
+    }
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().catch(() => {});
+    } else if (document.webkitExitFullscreen) {
+      document.webkitExitFullscreen();
+    }
+  }
+}
+
+function updateFullscreenUI() {
+  const active = isFullscreen();
+  if (active) {
+    fullscreenBtn.classList.add('active');
+    fullscreenExpandIcon.classList.add('hidden');
+    fullscreenCompressIcon.classList.remove('hidden');
+  } else {
+    fullscreenBtn.classList.remove('active');
+    fullscreenExpandIcon.classList.remove('hidden');
+    fullscreenCompressIcon.classList.add('hidden');
+  }
+}
+
 function initUI() {
   loadSettings();
   applyColor(settings.color, false);
   applyFont(settings.font, false);
   applyBrightness(settings.brightness, false);
+  applyZoom(settings.zoom, false);
   applyFormat(settings.format, false);
+  updateFullscreenUI();
   updateTime();
 }
 
@@ -273,12 +331,23 @@ brightnessSlider.addEventListener('input', (e) => {
   resetHideTimer();
 });
 
+zoomSlider.addEventListener('input', (e) => {
+  applyZoom(e.target.value);
+  resetHideTimer();
+});
+
 formatButtons.forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     applyFormat(btn.dataset.format);
     resetHideTimer();
   });
+});
+
+fullscreenBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  toggleFullscreen();
+  resetHideTimer();
 });
 
 closeDrawerBtn.addEventListener('click', (e) => {
@@ -299,9 +368,39 @@ let pointerStartY = 0;
 let pointerStartX = 0;
 let pointerStartBrightness = 100;
 let isDraggingVertical = false;
+let isPinching = false;
+let pinchStartDist = 0;
+let pinchStartZoom = 100;
+
+document.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2 && !settingsDrawer.contains(e.target)) {
+    isPinching = true;
+    isDraggingVertical = false;
+    pinchStartDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    pinchStartZoom = settings.zoom;
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', (e) => {
+  if (isPinching && e.touches.length === 2) {
+    const currentDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    if (pinchStartDist > 0) {
+      const factor = currentDist / pinchStartDist;
+      const targetZoom = Math.round(pinchStartZoom * factor);
+      applyZoom(targetZoom, false);
+    }
+  }
+}, { passive: true });
+
+document.addEventListener('touchend', (e) => {
+  if (isPinching && e.touches.length < 2) {
+    isPinching = false;
+    saveSettings();
+  }
+}, { passive: true });
 
 document.addEventListener('pointerdown', (e) => {
-  if (settingsDrawer.contains(e.target)) {
+  if (settingsDrawer.contains(e.target) || isPinching) {
     return;
   }
 
@@ -316,7 +415,7 @@ document.addEventListener('pointerdown', (e) => {
 });
 
 document.addEventListener('pointermove', (e) => {
-  if (settingsDrawer.contains(e.target) || isSettingsOpen()) {
+  if (settingsDrawer.contains(e.target) || isSettingsOpen() || isPinching) {
     return;
   }
 
@@ -336,7 +435,7 @@ document.addEventListener('pointermove', (e) => {
 });
 
 document.addEventListener('pointerup', (e) => {
-  if (settingsDrawer.contains(e.target)) {
+  if (settingsDrawer.contains(e.target) || isPinching) {
     return;
   }
 
@@ -352,6 +451,9 @@ document.addEventListener('pointerup', (e) => {
     openSettings();
   }
 });
+
+document.addEventListener('fullscreenchange', updateFullscreenUI);
+document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
@@ -371,4 +473,3 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   });
 }
-

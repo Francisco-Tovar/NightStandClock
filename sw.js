@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v1';
+const CACHE_NAME = 'nightstand-clock-v2';
 
 const STATIC_ASSETS = [
   './',
@@ -8,7 +8,8 @@ const STATIC_ASSETS = [
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
-  './icons/icon.svg'
+  './icons/icon.svg',
+  './fonts/DSEG7Classic-Regular.woff2'
 ];
 
 self.addEventListener('install', (event) => {
@@ -59,4 +60,3 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
-
