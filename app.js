@@ -7,9 +7,8 @@ const DEFAULT_SETTINGS = {
   gifData: '',
   gifName: '',
   gifPos: 'right',
-  walkerEnabled: false,
-  walkerSprite: 'presets/goblin_walk.gif',
-  walkerName: 'goblin',
+  walkerDensity: 'off',
+  walkerHero: 'warrior',
   walkerMode: 'perimeter'
 };
 
@@ -42,9 +41,63 @@ const COMPANION_PRESETS = {
   star: 'presets/star.gif'
 };
 
-const WALKER_PRESETS = {
-  goblin: 'presets/goblin_walk.gif',
-  cat: 'presets/cat_walk.gif'
+const HEROES = {
+  warrior: {
+    name: 'Warrior',
+    walk: 'presets/characters/warrior/walk.gif',
+    attack: 'presets/characters/warrior/attack.gif',
+    idle: 'presets/characters/warrior/idle.gif',
+    hurt: 'presets/characters/warrior/hurt.gif',
+    speed: 68
+  },
+  assasin: {
+    name: 'Assassin',
+    walk: 'presets/characters/assasin/walk.gif',
+    attack: 'presets/characters/assasin/attack.gif',
+    idle: 'presets/characters/assasin/idle.gif',
+    hurt: 'presets/characters/assasin/hurt.gif',
+    speed: 74
+  },
+  barbarian: {
+    name: 'Barbarian',
+    walk: 'presets/characters/barbarian/walk.gif',
+    attack: 'presets/characters/barbarian/attack.gif',
+    idle: 'presets/characters/barbarian/idle.gif',
+    hurt: 'presets/characters/barbarian/hurt.gif',
+    speed: 64
+  },
+  sorceress: {
+    name: 'Sorceress',
+    walk: 'presets/characters/sorceress/walk.gif',
+    attack: 'presets/characters/sorceress/attack.gif',
+    idle: 'presets/characters/sorceress/idle.gif',
+    hurt: 'presets/characters/sorceress/hurt.gif',
+    speed: 62
+  },
+  necromancer: {
+    name: 'Necromancer',
+    walk: 'presets/characters/necromancer/walk.gif',
+    attack: 'presets/characters/necromancer/attack.gif',
+    idle: 'presets/characters/necromancer/idle.gif',
+    hurt: 'presets/characters/necromancer/hurt.gif',
+    speed: 60
+  },
+  centaur: {
+    name: 'Centaur',
+    walk: 'presets/characters/centaur/walk.gif',
+    attack: 'presets/characters/centaur/attack.gif',
+    idle: 'presets/characters/centaur/idle.gif',
+    hurt: 'presets/characters/centaur/hurt.gif',
+    speed: 78
+  },
+  cat: {
+    name: 'Cat',
+    walk: 'presets/cat_walk.gif',
+    attack: 'presets/cat_walk.gif',
+    idle: 'presets/cat_walk.gif',
+    hurt: 'presets/cat_walk.gif',
+    speed: 65
+  }
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -94,14 +147,11 @@ const gifUploadInput = document.getElementById('gif-upload-input');
 const removeGifBtn = document.getElementById('remove-gif-btn');
 const presetPillButtons = document.querySelectorAll('#companion-presets .preset-pill-btn');
 
-const borderWalkerEl = document.getElementById('border-walker');
-const borderWalkerImg = document.getElementById('border-walker-img');
+const borderWalkerLayer = document.getElementById('border-walker-layer');
 const walkerStatusLabel = document.getElementById('walker-status-label');
 const walkerModeButtons = document.querySelectorAll('#walker-mode-options .segment-btn');
-const walkerUploadInput = document.getElementById('walker-upload-input');
-const walkerToggleBtn = document.getElementById('walker-toggle-btn');
-const walkerToggleText = document.getElementById('walker-toggle-text');
-const walkerPresetButtons = document.querySelectorAll('#walker-presets .preset-pill-btn');
+const walkerDensityButtons = document.querySelectorAll('#walker-density-options .segment-btn');
+const walkerHeroButtons = document.querySelectorAll('#walker-hero-presets .preset-pill-btn');
 
 let wakeLock = null;
 let hideTimer = null;
@@ -109,11 +159,9 @@ let lastHour = '';
 let lastMin = '';
 let lastAmPm = '';
 
+let activeWalkers = [];
 let walkerRafId = null;
 let walkerLastTime = 0;
-let walkerDist = 0;
-let walkerFloorX = 12;
-let walkerFloorDirection = 1;
 
 function updateTime() {
   const now = new Date();
@@ -365,8 +413,51 @@ function applyGif(persist = true) {
   }
 }
 
-function updateWalkerAnimation(timestamp) {
-  if (!settings.walkerEnabled) {
+function triggerWalkerState(walker, state, duration) {
+  walker.state = state;
+  walker.stateTimer = duration;
+  const data = HEROES[walker.heroKey];
+  if (data && data[state]) {
+    walker.imgEl.src = data[state];
+  }
+}
+
+function createWalkerEntity(heroKey, startOffset) {
+  const hero = HEROES[heroKey] || HEROES.warrior;
+  const domEl = document.createElement('div');
+  domEl.className = 'walker-entity';
+  const imgEl = document.createElement('img');
+  imgEl.className = 'walker-entity-img';
+  imgEl.src = hero.walk;
+  imgEl.alt = hero.name;
+  domEl.appendChild(imgEl);
+
+  const walker = {
+    heroKey,
+    domEl,
+    imgEl,
+    dist: startOffset,
+    floorX: startOffset,
+    floorDir: 1,
+    speed: hero.speed,
+    state: 'walk',
+    stateTimer: 0,
+    cooldown: 2,
+    flavorTimer: 10 + Math.random() * 10
+  };
+
+  domEl.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    triggerWalkerState(walker, 'attack', 0.8);
+    enableKeepAwake();
+  });
+
+  borderWalkerLayer.appendChild(domEl);
+  return walker;
+}
+
+function updateWalkers(timestamp) {
+  if (settings.walkerDensity === 'off' || activeWalkers.length === 0) {
     return;
   }
 
@@ -380,92 +471,163 @@ function updateWalkerAnimation(timestamp) {
   const h = window.innerHeight;
   const inset = 12;
   const size = 48;
-  const speed = 70;
 
-  if (settings.walkerMode === 'perimeter') {
-    const d1 = Math.max(10, w - 2 * inset - size);
-    const d2 = Math.max(10, h - 2 * inset - size);
-    const totalDist = 2 * (d1 + d2);
+  const d1 = Math.max(10, w - 2 * inset - size);
+  const d2 = Math.max(10, h - 2 * inset - size);
+  const totalDist = 2 * (d1 + d2);
 
-    walkerDist = (walkerDist + speed * dt) % totalDist;
+  for (let i = 0; i < activeWalkers.length; i++) {
+    const wkr = activeWalkers[i];
 
-    let x = inset;
-    let y = h - inset - size;
-    let rot = 0;
-    let flip = 1;
+    if (wkr.cooldown > 0) {
+      wkr.cooldown -= dt;
+    }
 
-    if (walkerDist < d1) {
-      x = inset + walkerDist;
-      y = h - inset - size;
-      rot = 0;
-      flip = 1;
-    } else if (walkerDist < d1 + d2) {
-      const seg = walkerDist - d1;
-      x = w - inset - size;
-      y = h - inset - size - seg;
-      rot = -90;
-      flip = 1;
-    } else if (walkerDist < 2 * d1 + d2) {
-      const seg = walkerDist - (d1 + d2);
-      x = w - inset - size - seg;
-      y = inset;
-      rot = 180;
-      flip = 1;
+    if (wkr.stateTimer > 0) {
+      wkr.stateTimer -= dt;
+      if (wkr.stateTimer <= 0) {
+        triggerWalkerState(wkr, 'walk', 0);
+      }
     } else {
-      const seg = walkerDist - (2 * d1 + d2);
-      x = inset;
-      y = inset + seg;
-      rot = 90;
-      flip = 1;
+      wkr.flavorTimer -= dt;
+      if (wkr.flavorTimer <= 0) {
+        const rndState = Math.random() > 0.4 ? 'attack' : 'idle';
+        triggerWalkerState(wkr, rndState, 0.9);
+        wkr.flavorTimer = 14 + Math.random() * 12;
+      }
     }
 
-    borderWalkerEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip})`;
-  } else {
-    const minX = inset;
-    const maxX = Math.max(minX + 10, w - inset - size);
-    walkerFloorX += walkerFloorDirection * speed * dt;
-    if (walkerFloorX >= maxX) {
-      walkerFloorX = maxX;
-      walkerFloorDirection = -1;
-    } else if (walkerFloorX <= minX) {
-      walkerFloorX = minX;
-      walkerFloorDirection = 1;
+    if (wkr.state === 'walk') {
+      if (settings.walkerMode === 'perimeter') {
+        wkr.dist = (wkr.dist + wkr.speed * dt) % totalDist;
+      } else {
+        const minX = inset;
+        const maxX = Math.max(minX + 10, w - inset - size);
+        wkr.floorX += wkr.floorDir * wkr.speed * dt;
+        if (wkr.floorX >= maxX) {
+          wkr.floorX = maxX;
+          wkr.floorDir = -1;
+        } else if (wkr.floorX <= minX) {
+          wkr.floorX = minX;
+          wkr.floorDir = 1;
+        }
+      }
     }
-    const y = h - inset - size;
-    borderWalkerEl.style.transform = `translate3d(${walkerFloorX}px, ${y}px, 0) scaleX(${walkerFloorDirection})`;
+
+    if (settings.walkerMode === 'perimeter') {
+      let x = inset;
+      let y = h - inset - size;
+      let rot = 0;
+      let flip = 1;
+
+      if (wkr.dist < d1) {
+        x = inset + wkr.dist;
+        y = h - inset - size;
+        rot = 0;
+        flip = 1;
+      } else if (wkr.dist < d1 + d2) {
+        const seg = wkr.dist - d1;
+        x = w - inset - size;
+        y = h - inset - size - seg;
+        rot = -90;
+        flip = 1;
+      } else if (wkr.dist < 2 * d1 + d2) {
+        const seg = wkr.dist - (d1 + d2);
+        x = w - inset - size - seg;
+        y = inset;
+        rot = 180;
+        flip = 1;
+      } else {
+        const seg = wkr.dist - (2 * d1 + d2);
+        x = inset;
+        y = inset + seg;
+        rot = 90;
+        flip = 1;
+      }
+
+      wkr.currentX = x;
+      wkr.currentY = y;
+      wkr.domEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip})`;
+    } else {
+      const y = h - inset - size;
+      wkr.currentX = wkr.floorX;
+      wkr.currentY = y;
+      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.floorDir})`;
+    }
   }
 
-  walkerRafId = requestAnimationFrame(updateWalkerAnimation);
+  if (activeWalkers.length > 1) {
+    for (let i = 0; i < activeWalkers.length; i++) {
+      for (let j = i + 1; j < activeWalkers.length; j++) {
+        const a = activeWalkers[i];
+        const b = activeWalkers[j];
+        if (a.cooldown <= 0 && b.cooldown <= 0 && a.state === 'walk' && b.state === 'walk') {
+          const dx = Math.abs(a.currentX - b.currentX);
+          const dy = Math.abs(a.currentY - b.currentY);
+          if (dx < 52 && dy < 52) {
+            triggerWalkerState(a, 'attack', 0.8);
+            triggerWalkerState(b, 'hurt', 0.8);
+            a.cooldown = 4.5;
+            b.cooldown = 4.5;
+          }
+        }
+      }
+    }
+  }
+
+  walkerRafId = requestAnimationFrame(updateWalkers);
 }
 
-function startWalker() {
+function startWalkers() {
   if (walkerRafId) {
     cancelAnimationFrame(walkerRafId);
   }
   walkerLastTime = 0;
-  borderWalkerEl.classList.remove('hidden');
-  walkerRafId = requestAnimationFrame(updateWalkerAnimation);
+  walkerRafId = requestAnimationFrame(updateWalkers);
 }
 
-function stopWalker() {
+function stopWalkers() {
   if (walkerRafId) {
     cancelAnimationFrame(walkerRafId);
     walkerRafId = null;
   }
-  borderWalkerEl.classList.add('hidden');
+  borderWalkerLayer.innerHTML = '';
+  activeWalkers = [];
 }
 
 function applyWalker(persist = true) {
-  if (settings.walkerEnabled && settings.walkerSprite) {
-    borderWalkerImg.src = settings.walkerSprite;
-    startWalker();
-    walkerStatusLabel.textContent = settings.walkerName || 'Active';
-    walkerToggleText.textContent = 'Disable';
-  } else {
-    stopWalker();
+  stopWalkers();
+
+  if (settings.walkerDensity === 'off') {
     walkerStatusLabel.textContent = 'Off';
-    walkerToggleText.textContent = 'Enable';
+  } else if (settings.walkerDensity === 'single') {
+    const hero = HEROES[settings.walkerHero] || HEROES.warrior;
+    activeWalkers = [createWalkerEntity(settings.walkerHero, 12)];
+    walkerStatusLabel.textContent = hero.name;
+    startWalkers();
+  } else if (settings.walkerDensity === 'all') {
+    const keys = ['warrior', 'assasin', 'barbarian', 'sorceress', 'necromancer', 'centaur'];
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const inset = 12;
+    const size = 48;
+    const perimeter = 2 * (Math.max(10, w - 2 * inset - size) + Math.max(10, h - 2 * inset - size));
+    const step = perimeter / keys.length;
+
+    activeWalkers = keys.map((key, idx) => {
+      return createWalkerEntity(key, idx * step);
+    });
+    walkerStatusLabel.textContent = 'All Party (6)';
+    startWalkers();
   }
+
+  walkerDensityButtons.forEach(btn => {
+    if (btn.dataset.density === settings.walkerDensity) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
 
   walkerModeButtons.forEach(btn => {
     if (btn.dataset.mode === settings.walkerMode) {
@@ -475,11 +637,8 @@ function applyWalker(persist = true) {
     }
   });
 
-  walkerPresetButtons.forEach(btn => {
-    const wKey = btn.dataset.walker;
-    if (wKey === 'off' && !settings.walkerEnabled) {
-      btn.classList.add('active');
-    } else if (settings.walkerEnabled && settings.walkerName === wKey) {
+  walkerHeroButtons.forEach(btn => {
+    if (btn.dataset.hero === settings.walkerHero) {
       btn.classList.add('active');
     } else {
       btn.classList.remove('active');
@@ -625,11 +784,13 @@ presetPillButtons.forEach(btn => {
   });
 });
 
-walkerToggleBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  settings.walkerEnabled = !settings.walkerEnabled;
-  applyWalker();
-  resetHideTimer();
+walkerDensityButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settings.walkerDensity = btn.dataset.density;
+    applyWalker();
+    resetHideTimer();
+  });
 });
 
 walkerModeButtons.forEach(btn => {
@@ -641,32 +802,12 @@ walkerModeButtons.forEach(btn => {
   });
 });
 
-walkerUploadInput.addEventListener('change', (e) => {
-  const file = e.target.files && e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      settings.walkerSprite = event.target.result;
-      settings.walkerName = file.name;
-      settings.walkerEnabled = true;
-      applyWalker();
-      resetHideTimer();
-    };
-    reader.readAsDataURL(file);
-  }
-  walkerUploadInput.value = '';
-});
-
-walkerPresetButtons.forEach(btn => {
+walkerHeroButtons.forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
-    const wKey = btn.dataset.walker;
-    if (wKey === 'off') {
-      settings.walkerEnabled = false;
-    } else if (WALKER_PRESETS[wKey]) {
-      settings.walkerSprite = WALKER_PRESETS[wKey];
-      settings.walkerName = wKey;
-      settings.walkerEnabled = true;
+    settings.walkerHero = btn.dataset.hero;
+    if (settings.walkerDensity === 'off') {
+      settings.walkerDensity = 'single';
     }
     applyWalker();
     resetHideTimer();
@@ -733,7 +874,7 @@ document.addEventListener('touchend', (e) => {
 document.addEventListener('pointerdown', (e) => {
   enableKeepAwake();
 
-  if (settingsDrawer.contains(e.target) || isPinching) {
+  if (settingsDrawer.contains(e.target) || isPinching || e.target.closest('.walker-entity')) {
     return;
   }
 
@@ -764,7 +905,7 @@ document.addEventListener('pointermove', (e) => {
 });
 
 document.addEventListener('pointerup', (e) => {
-  if (settingsDrawer.contains(e.target) || isPinching) {
+  if (settingsDrawer.contains(e.target) || isPinching || e.target.closest('.walker-entity')) {
     return;
   }
 

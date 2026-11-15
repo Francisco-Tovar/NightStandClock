@@ -22,9 +22,7 @@
     <source src="nosleep.mp4" type="video/mp4">
   </video>
 
-  <div id="border-walker" class="border-walker hidden" aria-hidden="true">
-    <img id="border-walker-img" class="border-walker-img" alt="">
-  </div>
+  <div id="border-walker-layer" class="border-walker-layer" aria-hidden="true"></div>
 
   <div id="rotate-hint" class="rotate-hint" aria-hidden="true">
     <svg class="rotate-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -183,7 +181,7 @@
 
       <div class="setting-item full-width-sm">
         <div class="setting-title-row">
-          <span class="setting-title">Border Walker</span>
+          <span class="setting-title">Border Walkers</span>
           <span id="walker-status-label" class="setting-value">Off</span>
         </div>
         <div class="companion-controls">
@@ -191,25 +189,20 @@
             <button type="button" class="segment-btn active" data-mode="perimeter">Border</button>
             <button type="button" class="segment-btn" data-mode="floor">Floor</button>
           </div>
-          <div class="companion-btn-group">
-            <label class="action-btn file-upload-label" title="Upload custom walk sprite or GIF">
-              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-              </svg>
-              <span>Upload</span>
-              <input type="file" id="walker-upload-input" accept="image/gif,image/png,image/webp">
-            </label>
-            <button type="button" id="walker-toggle-btn" class="action-btn" title="Toggle Walker">
-              <span id="walker-toggle-text">Enable</span>
-            </button>
+          <div class="segmented-control" id="walker-density-options">
+            <button type="button" class="segment-btn" data-density="single">Single</button>
+            <button type="button" class="segment-btn" data-density="all">All Party</button>
+            <button type="button" class="segment-btn active" data-density="off">Off</button>
           </div>
         </div>
-        <div class="companion-presets" id="walker-presets">
-          <button type="button" class="preset-pill-btn" data-walker="goblin">Goblin</button>
-          <button type="button" class="preset-pill-btn" data-walker="cat">Cat</button>
-          <button type="button" class="preset-pill-btn" data-walker="off">Off</button>
+        <div class="hero-selector" id="walker-hero-presets">
+          <button type="button" class="preset-pill-btn active" data-hero="warrior">Warrior</button>
+          <button type="button" class="preset-pill-btn" data-hero="assasin">Assassin</button>
+          <button type="button" class="preset-pill-btn" data-hero="barbarian">Barbarian</button>
+          <button type="button" class="preset-pill-btn" data-hero="sorceress">Sorceress</button>
+          <button type="button" class="preset-pill-btn" data-hero="necromancer">Necromancer</button>
+          <button type="button" class="preset-pill-btn" data-hero="centaur">Centaur</button>
+          <button type="button" class="preset-pill-btn" data-hero="cat">Cat</button>
         </div>
       </div>
     </div>

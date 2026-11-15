@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v5';
+const CACHE_NAME = 'nightstand-clock-v6';
 
 const STATIC_ASSETS = [
   './',
@@ -14,8 +14,31 @@ const STATIC_ASSETS = [
   './presets/flame.gif',
   './presets/heart.gif',
   './presets/star.gif',
-  './presets/goblin_walk.gif',
-  './presets/cat_walk.gif'
+  './presets/cat_walk.gif',
+  './presets/characters/warrior/walk.gif',
+  './presets/characters/warrior/attack.gif',
+  './presets/characters/warrior/idle.gif',
+  './presets/characters/warrior/hurt.gif',
+  './presets/characters/assasin/walk.gif',
+  './presets/characters/assasin/attack.gif',
+  './presets/characters/assasin/idle.gif',
+  './presets/characters/assasin/hurt.gif',
+  './presets/characters/barbarian/walk.gif',
+  './presets/characters/barbarian/attack.gif',
+  './presets/characters/barbarian/idle.gif',
+  './presets/characters/barbarian/hurt.gif',
+  './presets/characters/sorceress/walk.gif',
+  './presets/characters/sorceress/attack.gif',
+  './presets/characters/sorceress/idle.gif',
+  './presets/characters/sorceress/hurt.gif',
+  './presets/characters/necromancer/walk.gif',
+  './presets/characters/necromancer/attack.gif',
+  './presets/characters/necromancer/idle.gif',
+  './presets/characters/necromancer/hurt.gif',
+  './presets/characters/centaur/walk.gif',
+  './presets/characters/centaur/attack.gif',
+  './presets/characters/centaur/idle.gif',
+  './presets/characters/centaur/hurt.gif'
 ];
 
 self.addEventListener('install', (event) => {
