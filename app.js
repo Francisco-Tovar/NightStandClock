@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.3.0';
+const APP_VERSION = 'v1.4.0';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -48,57 +48,71 @@ const HEROES = {
     name: 'Warrior',
     walk: 'presets/characters/warrior/walk.gif',
     attack: 'presets/characters/warrior/attack.gif',
+    s_attack: 'presets/characters/warrior/s_attack.gif',
+    jump: 'presets/characters/warrior/jump.gif',
     idle: 'presets/characters/warrior/idle.gif',
     hurt: 'presets/characters/warrior/hurt.gif',
-    speed: 68
+    baseSpeed: 64
   },
   assasin: {
     name: 'Assassin',
     walk: 'presets/characters/assasin/walk.gif',
     attack: 'presets/characters/assasin/attack.gif',
+    s_attack: 'presets/characters/assasin/s_attack.gif',
+    jump: 'presets/characters/assasin/jump.gif',
     idle: 'presets/characters/assasin/idle.gif',
     hurt: 'presets/characters/assasin/hurt.gif',
-    speed: 74
+    baseSpeed: 84
   },
   barbarian: {
     name: 'Barbarian',
     walk: 'presets/characters/barbarian/walk.gif',
     attack: 'presets/characters/barbarian/attack.gif',
+    s_attack: 'presets/characters/barbarian/s_attack.gif',
+    jump: 'presets/characters/barbarian/jump.gif',
     idle: 'presets/characters/barbarian/idle.gif',
     hurt: 'presets/characters/barbarian/hurt.gif',
-    speed: 64
+    baseSpeed: 58
   },
   sorceress: {
     name: 'Sorceress',
     walk: 'presets/characters/sorceress/walk.gif',
     attack: 'presets/characters/sorceress/attack.gif',
+    s_attack: 'presets/characters/sorceress/s_attack.gif',
+    jump: 'presets/characters/sorceress/jump.gif',
     idle: 'presets/characters/sorceress/idle.gif',
     hurt: 'presets/characters/sorceress/hurt.gif',
-    speed: 62
+    baseSpeed: 70
   },
   necromancer: {
     name: 'Necromancer',
     walk: 'presets/characters/necromancer/walk.gif',
     attack: 'presets/characters/necromancer/attack.gif',
+    s_attack: 'presets/characters/necromancer/s_attack.gif',
+    jump: 'presets/characters/necromancer/jump.gif',
     idle: 'presets/characters/necromancer/idle.gif',
     hurt: 'presets/characters/necromancer/hurt.gif',
-    speed: 60
+    baseSpeed: 52
   },
   centaur: {
     name: 'Centaur',
     walk: 'presets/characters/centaur/walk.gif',
     attack: 'presets/characters/centaur/attack.gif',
+    s_attack: 'presets/characters/centaur/s_attack.gif',
+    jump: 'presets/characters/centaur/jump.gif',
     idle: 'presets/characters/centaur/idle.gif',
     hurt: 'presets/characters/centaur/hurt.gif',
-    speed: 78
+    baseSpeed: 94
   },
   cat: {
     name: 'Cat',
     walk: 'presets/cat_walk.gif',
     attack: 'presets/cat_walk.gif',
+    s_attack: 'presets/cat_walk.gif',
+    jump: 'presets/cat_walk.gif',
     idle: 'presets/cat_walk.gif',
     hurt: 'presets/cat_walk.gif',
-    speed: 65
+    baseSpeed: 72
   }
 };
 
@@ -520,7 +534,7 @@ function triggerWalkerState(walker, state, duration) {
   }
 }
 
-function createWalkerEntity(heroKey, startOffset) {
+function createWalkerEntity(heroKey, startOffset, startDirection) {
   const hero = HEROES[heroKey] || HEROES.warrior;
   const domEl = document.createElement('div');
   domEl.className = 'walker-entity';
@@ -530,23 +544,28 @@ function createWalkerEntity(heroKey, startOffset) {
   imgEl.alt = hero.name;
   domEl.appendChild(imgEl);
 
+  const speedVariation = 0.85 + Math.random() * 0.3;
+  const actualSpeed = Math.round(hero.baseSpeed * speedVariation);
+
   const walker = {
     heroKey,
     domEl,
     imgEl,
     dist: startOffset,
     floorX: startOffset,
-    floorDir: 1,
-    speed: hero.speed,
+    direction: startDirection,
+    speed: actualSpeed,
     state: 'walk',
     stateTimer: 0,
     cooldown: 2,
-    flavorTimer: 10 + Math.random() * 10
+    actionTimer: 3 + Math.random() * 8
   };
 
   domEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    triggerWalkerState(walker, 'attack', 0.8);
+    const actions = ['s_attack', 'jump', 'attack'];
+    const randomAct = actions[Math.floor(Math.random() * actions.length)];
+    triggerWalkerState(walker, randomAct, 1.1);
     enableKeepAwake();
   });
 
@@ -587,27 +606,37 @@ function updateWalkers(timestamp) {
         triggerWalkerState(wkr, 'walk', 0);
       }
     } else {
-      wkr.flavorTimer -= dt;
-      if (wkr.flavorTimer <= 0) {
-        const rndState = Math.random() > 0.4 ? 'attack' : 'idle';
-        triggerWalkerState(wkr, rndState, 0.9);
-        wkr.flavorTimer = 14 + Math.random() * 12;
+      wkr.actionTimer -= dt;
+      if (wkr.actionTimer <= 0) {
+        const roll = Math.random();
+        if (roll < 0.28) {
+          triggerWalkerState(wkr, 'idle', 1.5 + Math.random() * 2.0);
+        } else if (roll < 0.52) {
+          triggerWalkerState(wkr, 's_attack', 1.1 + Math.random() * 0.4);
+        } else if (roll < 0.72) {
+          triggerWalkerState(wkr, 'jump', 0.7);
+        } else if (roll < 0.86) {
+          triggerWalkerState(wkr, 'attack', 0.8);
+        } else {
+          wkr.direction = -wkr.direction;
+        }
+        wkr.actionTimer = 4 + Math.random() * 9;
       }
     }
 
     if (wkr.state === 'walk') {
       if (settings.walkerMode === 'perimeter') {
-        wkr.dist = (wkr.dist + wkr.speed * dt) % totalDist;
+        wkr.dist = ((wkr.dist + wkr.direction * wkr.speed * dt) % totalDist + totalDist) % totalDist;
       } else {
         const minX = inset;
         const maxX = Math.max(minX + 10, w - inset - size);
-        wkr.floorX += wkr.floorDir * wkr.speed * dt;
+        wkr.floorX += wkr.direction * wkr.speed * dt;
         if (wkr.floorX >= maxX) {
           wkr.floorX = maxX;
-          wkr.floorDir = -1;
+          wkr.direction = -1;
         } else if (wkr.floorX <= minX) {
           wkr.floorX = minX;
-          wkr.floorDir = 1;
+          wkr.direction = 1;
         }
       }
     }
@@ -616,31 +645,27 @@ function updateWalkers(timestamp) {
       let x = inset;
       let y = h - inset - size;
       let rot = 0;
-      let flip = 1;
+      let flip = wkr.direction;
 
       if (wkr.dist < d1) {
         x = inset + wkr.dist;
         y = h - inset - size;
         rot = 0;
-        flip = 1;
       } else if (wkr.dist < d1 + d2) {
         const seg = wkr.dist - d1;
         x = w - inset - size;
         y = h - inset - size - seg;
         rot = -90;
-        flip = 1;
       } else if (wkr.dist < 2 * d1 + d2) {
         const seg = wkr.dist - (d1 + d2);
         x = w - inset - size - seg;
         y = inset;
         rot = 180;
-        flip = 1;
       } else {
         const seg = wkr.dist - (2 * d1 + d2);
         x = inset;
         y = inset + seg;
         rot = 90;
-        flip = 1;
       }
 
       wkr.currentX = x;
@@ -650,7 +675,7 @@ function updateWalkers(timestamp) {
       const y = h - inset - size;
       wkr.currentX = wkr.floorX;
       wkr.currentY = y;
-      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.floorDir})`;
+      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.direction})`;
     }
   }
 
@@ -662,11 +687,17 @@ function updateWalkers(timestamp) {
         if (a.cooldown <= 0 && b.cooldown <= 0 && a.state === 'walk' && b.state === 'walk') {
           const dx = Math.abs(a.currentX - b.currentX);
           const dy = Math.abs(a.currentY - b.currentY);
-          if (dx < 52 && dy < 52) {
-            triggerWalkerState(a, 'attack', 0.8);
-            triggerWalkerState(b, 'hurt', 0.8);
-            a.cooldown = 4.5;
-            b.cooldown = 4.5;
+          if (dx < 50 && dy < 50) {
+            const pick = Math.random();
+            if (pick < 0.5) {
+              triggerWalkerState(a, 's_attack', 1.0);
+              triggerWalkerState(b, 'hurt', 0.9);
+            } else {
+              triggerWalkerState(a, 'jump', 0.8);
+              triggerWalkerState(b, 'attack', 0.8);
+            }
+            a.cooldown = 4.0;
+            b.cooldown = 4.0;
           }
         }
       }
@@ -700,7 +731,7 @@ function applyWalker(persist = true) {
     walkerStatusLabel.textContent = 'Off';
   } else if (settings.walkerDensity === 'single') {
     const hero = HEROES[settings.walkerHero] || HEROES.warrior;
-    activeWalkers = [createWalkerEntity(settings.walkerHero, 12)];
+    activeWalkers = [createWalkerEntity(settings.walkerHero, 12, 1)];
     walkerStatusLabel.textContent = hero.name;
     startWalkers();
   } else if (settings.walkerDensity === 'all') {
@@ -713,7 +744,8 @@ function applyWalker(persist = true) {
     const step = perimeter / keys.length;
 
     activeWalkers = keys.map((key, idx) => {
-      return createWalkerEntity(key, idx * step);
+      const initialDir = idx % 2 === 0 ? 1 : -1;
+      return createWalkerEntity(key, idx * step, initialDir);
     });
     walkerStatusLabel.textContent = 'All Party (6)';
     startWalkers();
