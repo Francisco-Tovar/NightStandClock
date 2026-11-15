@@ -16,6 +16,17 @@
   --shift-y: 0px;
 }
 
+.keep-awake-video {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0.001;
+  pointer-events: none;
+  z-index: -1;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

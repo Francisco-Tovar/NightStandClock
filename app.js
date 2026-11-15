@@ -67,6 +67,7 @@ const brightnessSlider = document.getElementById('brightness-slider');
 const brightnessValue = document.getElementById('brightness-value');
 const zoomSlider = document.getElementById('zoom-slider');
 const zoomValue = document.getElementById('zoom-value');
+const keepAwakeVideo = document.getElementById('keep-awake-video');
 
 let wakeLock = null;
 let hideTimer = null;
@@ -120,6 +121,15 @@ function shiftClockPosition() {
   document.documentElement.style.setProperty('--shift-y', `${shiftY}px`);
 }
 
+function isKeepAwakeActive() {
+  const isVideoPlaying = keepAwakeVideo && !keepAwakeVideo.paused && !keepAwakeVideo.ended && keepAwakeVideo.readyState > 1;
+  return Boolean(wakeLock || isVideoPlaying);
+}
+
+function checkKeepAwakeStatus() {
+  setWakeLockUI(isKeepAwakeActive());
+}
+
 async function requestWakeLock() {
   if ('wakeLock' in navigator) {
     try {
@@ -127,23 +137,38 @@ async function requestWakeLock() {
       setWakeLockUI(true);
       wakeLock.addEventListener('release', () => {
         wakeLock = null;
-        setWakeLockUI(false);
+        checkKeepAwakeStatus();
       });
     } catch (err) {
-      setWakeLockUI(false);
+      checkKeepAwakeStatus();
     }
   } else {
-    setWakeLockUI(false);
+    checkKeepAwakeStatus();
   }
+}
+
+function startVideoKeepAwake() {
+  if (keepAwakeVideo) {
+    keepAwakeVideo.play().then(() => {
+      setWakeLockUI(true);
+    }).catch(() => {
+      checkKeepAwakeStatus();
+    });
+  }
+}
+
+function enableKeepAwake() {
+  requestWakeLock();
+  startVideoKeepAwake();
 }
 
 function setWakeLockUI(active) {
   if (active) {
     wakelockDot.classList.add('active');
-    wakelockText.textContent = 'Wake Lock Active';
+    wakelockText.textContent = 'Keep-Awake Active';
   } else {
     wakelockDot.classList.remove('active');
-    wakelockText.textContent = 'Wake Lock Inactive';
+    wakelockText.textContent = 'Keep-Awake Inactive';
   }
 }
 
@@ -261,7 +286,7 @@ function applyFormat(format, persist = true) {
 }
 
 function isFullscreen() {
-  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
 
 function toggleFullscreen() {
@@ -357,6 +382,7 @@ closeDrawerBtn.addEventListener('click', (e) => {
 
 settingsDrawer.addEventListener('pointerdown', (e) => {
   e.stopPropagation();
+  enableKeepAwake();
   resetHideTimer();
 });
 
@@ -373,6 +399,7 @@ let pinchStartDist = 0;
 let pinchStartZoom = 100;
 
 document.addEventListener('touchstart', (e) => {
+  enableKeepAwake();
   if (e.touches.length === 2 && !settingsDrawer.contains(e.target)) {
     isPinching = true;
     isDraggingVertical = false;
@@ -400,12 +427,10 @@ document.addEventListener('touchend', (e) => {
 }, { passive: true });
 
 document.addEventListener('pointerdown', (e) => {
+  enableKeepAwake();
+
   if (settingsDrawer.contains(e.target) || isPinching) {
     return;
-  }
-
-  if (!wakeLock) {
-    requestWakeLock();
   }
 
   pointerStartY = e.clientY;
@@ -457,16 +482,35 @@ document.addEventListener('webkitfullscreenchange', updateFullscreenUI);
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
-    requestWakeLock();
+    enableKeepAwake();
     updateTime();
   }
 });
+
+if (keepAwakeVideo) {
+  keepAwakeVideo.addEventListener('playing', () => setWakeLockUI(true));
+  keepAwakeVideo.addEventListener('pause', checkKeepAwakeStatus);
+  keepAwakeVideo.addEventListener('ended', () => {
+    keepAwakeVideo.play().catch(() => {});
+  });
+}
 
 initUI();
 setInterval(updateTime, 1000);
 shiftClockPosition();
 setInterval(shiftClockPosition, 60000);
-requestWakeLock();
+enableKeepAwake();
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    if (!wakeLock && 'wakeLock' in navigator) {
+      requestWakeLock();
+    }
+    if (keepAwakeVideo && keepAwakeVideo.paused) {
+      keepAwakeVideo.play().catch(() => {});
+    }
+  }
+  checkKeepAwakeStatus();
+}, 15000);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
