@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.1';
+const APP_VERSION = 'v1.4.2';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -6,6 +6,7 @@ const DEFAULT_SETTINGS = {
   brightness: 100,
   zoom: 100,
   format: '12',
+  hideTopBar: false,
   gifData: '',
   gifName: '',
   gifPos: 'right',
@@ -152,6 +153,8 @@ const customColorPicker = document.getElementById('custom-color-picker');
 const customColorLabel = document.querySelector('.custom-color-label');
 const fontButtons = document.querySelectorAll('#font-options .segment-btn');
 const formatButtons = document.querySelectorAll('#format-options .segment-btn');
+const topbarStatusLabel = document.getElementById('topbar-status-label');
+const topbarButtons = document.querySelectorAll('#topbar-options .segment-btn');
 const brightnessSlider = document.getElementById('brightness-slider');
 const brightnessValue = document.getElementById('brightness-value');
 const zoomSlider = document.getElementById('zoom-slider');
@@ -784,21 +787,61 @@ function isFullscreen() {
   return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
 
+function enterFullscreen() {
+  if (isFullscreen()) {
+    return;
+  }
+  const docEl = document.documentElement;
+  if (docEl.requestFullscreen) {
+    try {
+      docEl.requestFullscreen({ navigationUI: 'hide' }).catch(() => {
+        docEl.requestFullscreen().catch(() => { });
+      });
+    } catch (e) {
+      docEl.requestFullscreen().catch(() => { });
+    }
+  } else if (docEl.webkitRequestFullscreen) {
+    docEl.webkitRequestFullscreen();
+  }
+}
+
+function exitFullscreen() {
+  if (!isFullscreen()) {
+    return;
+  }
+  if (document.exitFullscreen) {
+    document.exitFullscreen().catch(() => { });
+  } else if (document.webkitExitFullscreen) {
+    document.webkitExitFullscreen();
+  }
+}
+
+function applyTopBar(persist = true) {
+  const mode = settings.hideTopBar ? 'hide' : 'show';
+  if (topbarStatusLabel) {
+    topbarStatusLabel.textContent = settings.hideTopBar ? 'Hide' : 'Show';
+  }
+  topbarButtons.forEach(btn => {
+    if (btn.dataset.topbar === mode) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+  if (persist) {
+    saveSettings();
+  }
+}
+
 function toggleFullscreen() {
   if (!isFullscreen()) {
-    const docEl = document.documentElement;
-    if (docEl.requestFullscreen) {
-      docEl.requestFullscreen().catch(() => { });
-    } else if (docEl.webkitRequestFullscreen) {
-      docEl.webkitRequestFullscreen();
-    }
+    settings.hideTopBar = true;
+    enterFullscreen();
   } else {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => { });
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    }
+    settings.hideTopBar = false;
+    exitFullscreen();
   }
+  applyTopBar(true);
 }
 
 function updateFullscreenUI() {
@@ -821,6 +864,7 @@ function initUI() {
   applyBrightness(settings.brightness, false);
   applyZoom(settings.zoom, false);
   applyFormat(settings.format, false);
+  applyTopBar(false);
   applyGif(false);
   applyWalker(false);
   updateFullscreenUI();
@@ -944,6 +988,21 @@ walkerHeroButtons.forEach(btn => {
   });
 });
 
+topbarButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const shouldHide = btn.dataset.topbar === 'hide';
+    settings.hideTopBar = shouldHide;
+    if (shouldHide) {
+      enterFullscreen();
+    } else {
+      exitFullscreen();
+    }
+    applyTopBar(true);
+    resetHideTimer();
+  });
+});
+
 checkUpdateBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   checkForAppUpdate(true);
@@ -1049,6 +1108,10 @@ document.addEventListener('pointerup', (e) => {
     isDraggingVertical = false;
     saveSettings();
     return;
+  }
+
+  if (settings.hideTopBar && !isFullscreen()) {
+    enterFullscreen();
   }
 
   if (isSettingsOpen()) {
