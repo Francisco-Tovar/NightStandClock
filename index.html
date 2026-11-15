@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Nightstand Clock</title>
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Night Clock">
@@ -48,6 +49,16 @@
       <span id="minutes" class="time-digit">00</span>
       <span id="ampm" class="ampm">AM</span>
     </div>
+    <script>
+      (function() {
+        try {
+          const d = new Date(), h = d.getHours(), m = d.getMinutes();
+          document.getElementById('hours').textContent = String(h % 12 || 12);
+          document.getElementById('minutes').textContent = String(m).padStart(2, '0');
+          document.getElementById('ampm').textContent = h >= 12 ? 'PM' : 'AM';
+        } catch (e) { }
+      })();
+    </script>
   </main>
 
   <aside id="settings-drawer" class="settings-drawer" aria-label="Clock Settings">
@@ -213,7 +224,7 @@
       <div class="setting-item full-width-sm">
         <div class="setting-title-row">
           <span class="setting-title">App Updates</span>
-          <span id="update-status-label" class="setting-value">v1.4.0</span>
+          <span id="update-status-label" class="setting-value">v1.4.1</span>
         </div>
         <div class="update-controls">
           <button type="button" id="check-update-btn" class="action-btn update-btn">
@@ -233,6 +244,6 @@
     </div>
   </aside>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=1.4.1"></script>
 </body>
 </html>

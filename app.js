@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.0';
+const APP_VERSION = 'v1.4.1';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v8';
+const CACHE_NAME = 'nightstand-clock-v9';
 
 const STATIC_ASSETS = [
   './',
@@ -79,6 +79,36 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') {
+    return;
+  }
+
+  const url = new URL(event.request.url);
+  const isCoreAsset = event.request.mode === 'navigate' ||
+                      url.pathname.endsWith('.html') ||
+                      url.pathname.endsWith('app.js') ||
+                      url.pathname.endsWith('styles.css');
+
+  if (isCoreAsset) {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'opaque')) {
+          const responseToCache = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match(event.request).then((cached) => {
+          if (cached) {
+            return cached;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+        });
+      })
+    );
     return;
   }
 
