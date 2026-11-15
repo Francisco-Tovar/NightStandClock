@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v6';
+const CACHE_NAME = 'nightstand-clock-v7';
 
 const STATIC_ASSETS = [
   './',
@@ -57,6 +57,12 @@ self.addEventListener('activate', (event) => {
       );
     }).then(() => self.clients.claim())
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {

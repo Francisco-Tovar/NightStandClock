@@ -1,3 +1,5 @@
+const APP_VERSION = 'v1.3.0';
+
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
   font: 'sans',
@@ -153,6 +155,13 @@ const walkerModeButtons = document.querySelectorAll('#walker-mode-options .segme
 const walkerDensityButtons = document.querySelectorAll('#walker-density-options .segment-btn');
 const walkerHeroButtons = document.querySelectorAll('#walker-hero-presets .preset-pill-btn');
 
+const checkUpdateBtn = document.getElementById('check-update-btn');
+const checkUpdateText = document.getElementById('check-update-text');
+const updateSpinner = document.getElementById('update-spinner');
+const updateStatusLabel = document.getElementById('update-status-label');
+const updateToast = document.getElementById('update-toast');
+const updateToastText = document.getElementById('update-toast-text');
+
 let wakeLock = null;
 let hideTimer = null;
 let lastHour = '';
@@ -162,6 +171,95 @@ let lastAmPm = '';
 let activeWalkers = [];
 let walkerRafId = null;
 let walkerLastTime = 0;
+
+let swRegistration = null;
+let isCheckingUpdate = false;
+let refreshing = false;
+
+function showUpdateToast(msg, duration = 4000) {
+  if (updateToast && updateToastText) {
+    updateToastText.textContent = msg;
+    updateToast.classList.remove('hidden');
+    if (duration > 0) {
+      setTimeout(() => {
+        updateToast.classList.add('hidden');
+      }, duration);
+    }
+  }
+}
+
+async function checkForAppUpdate(isManual = false) {
+  if (!('serviceWorker' in navigator) || isCheckingUpdate) {
+    return;
+  }
+
+  isCheckingUpdate = true;
+  if (isManual && updateSpinner && checkUpdateText) {
+    updateSpinner.classList.add('spinning');
+    checkUpdateText.textContent = 'Checking...';
+  }
+
+  try {
+    const reg = swRegistration || await navigator.serviceWorker.getRegistration();
+    if (!reg) {
+      if (isManual && checkUpdateText) {
+        checkUpdateText.textContent = 'Up to Date';
+        setTimeout(() => {
+          checkUpdateText.textContent = 'Check for Updates';
+        }, 2500);
+      }
+      isCheckingUpdate = false;
+      if (updateSpinner) updateSpinner.classList.remove('spinning');
+      return;
+    }
+
+    if (reg.waiting) {
+      showUpdateToast('Applying update...', 0);
+      reg.waiting.postMessage({ action: 'skipWaiting' });
+      return;
+    }
+
+    await reg.update();
+
+    if (reg.installing) {
+      showUpdateToast('Downloading update...', 0);
+      reg.installing.addEventListener('statechange', (e) => {
+        if (e.target.state === 'installed' && navigator.serviceWorker.controller) {
+          showUpdateToast('Update ready! Refreshing...', 0);
+          if (reg.waiting) {
+            reg.waiting.postMessage({ action: 'skipWaiting' });
+          }
+        }
+      });
+    } else if (reg.waiting) {
+      showUpdateToast('Applying update...', 0);
+      reg.waiting.postMessage({ action: 'skipWaiting' });
+    } else {
+      if (isManual) {
+        updateStatusLabel.textContent = 'Latest';
+        if (checkUpdateText) checkUpdateText.textContent = 'Up to Date!';
+        setTimeout(() => {
+          updateStatusLabel.textContent = APP_VERSION;
+          if (checkUpdateText) checkUpdateText.textContent = 'Check for Updates';
+        }, 3000);
+      }
+    }
+  } catch (err) {
+    if (isManual) {
+      updateStatusLabel.textContent = 'Offline';
+      if (checkUpdateText) checkUpdateText.textContent = 'Check Failed';
+      setTimeout(() => {
+        updateStatusLabel.textContent = APP_VERSION;
+        if (checkUpdateText) checkUpdateText.textContent = 'Check for Updates';
+      }, 3000);
+    }
+  } finally {
+    if (updateSpinner) {
+      updateSpinner.classList.remove('spinning');
+    }
+    isCheckingUpdate = false;
+  }
+}
 
 function updateTime() {
   const now = new Date();
@@ -814,6 +912,12 @@ walkerHeroButtons.forEach(btn => {
   });
 });
 
+checkUpdateBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  checkForAppUpdate(true);
+  resetHideTimer();
+});
+
 fullscreenBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   toggleFullscreen();
@@ -929,6 +1033,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
     enableKeepAwake();
     updateTime();
+    checkForAppUpdate(false);
   }
 });
 
@@ -957,8 +1062,35 @@ setInterval(() => {
   checkKeepAwakeStatus();
 }, 15000);
 
+setInterval(() => {
+  if (document.visibilityState === 'visible') {
+    checkForAppUpdate(false);
+  }
+}, 1800000);
+
 if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!refreshing) {
+      refreshing = true;
+      window.location.reload();
+    }
+  });
+
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+    navigator.serviceWorker.register('./sw.js').then((reg) => {
+      swRegistration = reg;
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        if (newWorker) {
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showUpdateToast('New version ready! Reloading...');
+              newWorker.postMessage({ action: 'skipWaiting' });
+            }
+          });
+        }
+      });
+      checkForAppUpdate(false);
+    }).catch(() => {});
   });
 }
