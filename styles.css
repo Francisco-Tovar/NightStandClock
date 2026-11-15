@@ -27,6 +27,34 @@
   z-index: -1;
 }
 
+.border-walker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 48px;
+  height: 48px;
+  pointer-events: none;
+  z-index: 50;
+  will-change: transform;
+  opacity: var(--clock-opacity);
+  transition: opacity 0.2s ease;
+}
+
+.border-walker.hidden {
+  display: none !important;
+}
+
+.border-walker-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  display: block;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

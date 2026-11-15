@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Nightstand Clock</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,20 +14,20 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&family=Outfit:wght@200;300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=JetBrains+Mono:wght@300;400&family=Outfit:wght@200;300;400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
   <video id="keep-awake-video" class="keep-awake-video" playsinline webkit-playsinline loop muted preload="auto">
     <source src="nosleep.mp4" type="video/mp4">
   </video>
 
+  <div id="border-walker" class="border-walker hidden" aria-hidden="true">
+    <img id="border-walker-img" class="border-walker-img" alt="">
+  </div>
+
   <div id="rotate-hint" class="rotate-hint" aria-hidden="true">
-    <svg class="rotate-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2"
-      fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <svg class="rotate-icon" viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
       <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
       <path d="M12 18h.01"></path>
       <path d="M19 9l3 3-3 3"></path>
@@ -57,23 +55,17 @@
         <span id="wakelock-text" class="status-label">Keep-Awake Active</span>
       </div>
       <div class="header-actions">
-        <button id="fullscreen-btn" class="action-btn" type="button" aria-label="Toggle Fullscreen"
-          title="Toggle Fullscreen">
-          <svg id="fullscreen-expand-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor"
-            stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3">
-            </path>
+        <button id="fullscreen-btn" class="action-btn" type="button" aria-label="Toggle Fullscreen" title="Toggle Fullscreen">
+          <svg id="fullscreen-expand-icon" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
           </svg>
-          <svg id="fullscreen-compress-icon" class="hidden" viewBox="0 0 24 24" width="15" height="15"
-            stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3">
-            </path>
+          <svg id="fullscreen-compress-icon" class="hidden" viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
           </svg>
           <span class="action-label">Fullscreen</span>
         </button>
         <button id="close-drawer-btn" class="close-btn" type="button" aria-label="Close settings">
-          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none"
-            stroke-linecap="round">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -85,16 +77,11 @@
       <div class="setting-item">
         <span class="setting-title">Color</span>
         <div class="color-options" id="color-options">
-          <button type="button" class="color-swatch active" data-color="#FF2D20" style="--swatch-color: #FF2D20;"
-            aria-label="OLED Red"></button>
-          <button type="button" class="color-swatch" data-color="#FF9F0A" style="--swatch-color: #FF9F0A;"
-            aria-label="Warm Amber"></button>
-          <button type="button" class="color-swatch" data-color="#E5E5EA" style="--swatch-color: #E5E5EA;"
-            aria-label="Soft White"></button>
-          <button type="button" class="color-swatch" data-color="#32ADE6" style="--swatch-color: #32ADE6;"
-            aria-label="Cool Cyan"></button>
-          <button type="button" class="color-swatch" data-color="#30D158" style="--swatch-color: #30D158;"
-            aria-label="Dim Green"></button>
+          <button type="button" class="color-swatch active" data-color="#FF2D20" style="--swatch-color: #FF2D20;" aria-label="OLED Red"></button>
+          <button type="button" class="color-swatch" data-color="#FF9F0A" style="--swatch-color: #FF9F0A;" aria-label="Warm Amber"></button>
+          <button type="button" class="color-swatch" data-color="#E5E5EA" style="--swatch-color: #E5E5EA;" aria-label="Soft White"></button>
+          <button type="button" class="color-swatch" data-color="#32ADE6" style="--swatch-color: #32ADE6;" aria-label="Cool Cyan"></button>
+          <button type="button" class="color-swatch" data-color="#30D158" style="--swatch-color: #30D158;" aria-label="Dim Green"></button>
           <label class="custom-color-label" title="Custom Color">
             <input type="color" id="custom-color-picker" value="#FF2D20">
             <span class="picker-wheel"></span>
@@ -119,8 +106,7 @@
           <span id="brightness-value" class="setting-value">100%</span>
         </div>
         <div class="slider-wrapper">
-          <svg class="slider-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
-            fill="none">
+          <svg class="slider-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none">
             <circle cx="12" cy="12" r="5"></circle>
             <line x1="12" y1="1" x2="12" y2="3"></line>
             <line x1="12" y1="21" x2="12" y2="23"></line>
@@ -131,8 +117,7 @@
             <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
             <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
           </svg>
-          <input type="range" id="brightness-slider" min="10" max="100" value="100" step="1"
-            aria-label="Clock brightness">
+          <input type="range" id="brightness-slider" min="10" max="100" value="100" step="1" aria-label="Clock brightness">
         </div>
       </div>
 
@@ -142,8 +127,7 @@
           <span id="zoom-value" class="setting-value">100%</span>
         </div>
         <div class="slider-wrapper">
-          <svg class="slider-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2"
-            fill="none" stroke-linecap="round">
+          <svg class="slider-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
             <circle cx="11" cy="11" r="7"></circle>
             <line x1="21" y1="21" x2="16" y2="16"></line>
             <line x1="11" y1="8" x2="11" y2="14"></line>
@@ -173,8 +157,7 @@
           </div>
           <div class="companion-btn-group">
             <label class="action-btn file-upload-label" title="Upload custom GIF">
-              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"
-                stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
@@ -183,8 +166,7 @@
               <input type="file" id="gif-upload-input" accept="image/gif,image/png,image/webp">
             </label>
             <button type="button" id="remove-gif-btn" class="action-btn" title="Remove GIF">
-              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none"
-                stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
@@ -198,10 +180,41 @@
           <button type="button" class="preset-pill-btn" data-preset="star">Star</button>
         </div>
       </div>
+
+      <div class="setting-item full-width-sm">
+        <div class="setting-title-row">
+          <span class="setting-title">Border Walker</span>
+          <span id="walker-status-label" class="setting-value">Off</span>
+        </div>
+        <div class="companion-controls">
+          <div class="segmented-control compact-control" id="walker-mode-options">
+            <button type="button" class="segment-btn active" data-mode="perimeter">Border</button>
+            <button type="button" class="segment-btn" data-mode="floor">Floor</button>
+          </div>
+          <div class="companion-btn-group">
+            <label class="action-btn file-upload-label" title="Upload custom walk sprite or GIF">
+              <svg viewBox="0 0 24 24" width="13" height="13" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Upload</span>
+              <input type="file" id="walker-upload-input" accept="image/gif,image/png,image/webp">
+            </label>
+            <button type="button" id="walker-toggle-btn" class="action-btn" title="Toggle Walker">
+              <span id="walker-toggle-text">Enable</span>
+            </button>
+          </div>
+        </div>
+        <div class="companion-presets" id="walker-presets">
+          <button type="button" class="preset-pill-btn" data-walker="goblin">Goblin</button>
+          <button type="button" class="preset-pill-btn" data-walker="cat">Cat</button>
+          <button type="button" class="preset-pill-btn" data-walker="off">Off</button>
+        </div>
+      </div>
     </div>
   </aside>
 
   <script src="app.js"></script>
 </body>
-
 </html>

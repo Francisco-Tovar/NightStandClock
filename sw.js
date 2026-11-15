@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v4';
+const CACHE_NAME = 'nightstand-clock-v5';
 
 const STATIC_ASSETS = [
   './',
@@ -13,7 +13,9 @@ const STATIC_ASSETS = [
   './nosleep.mp4',
   './presets/flame.gif',
   './presets/heart.gif',
-  './presets/star.gif'
+  './presets/star.gif',
+  './presets/goblin_walk.gif',
+  './presets/cat_walk.gif'
 ];
 
 self.addEventListener('install', (event) => {

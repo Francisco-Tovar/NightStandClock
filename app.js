@@ -6,7 +6,11 @@ const DEFAULT_SETTINGS = {
   format: '12',
   gifData: '',
   gifName: '',
-  gifPos: 'right'
+  gifPos: 'right',
+  walkerEnabled: false,
+  walkerSprite: 'presets/goblin_walk.gif',
+  walkerName: 'goblin',
+  walkerMode: 'perimeter'
 };
 
 const FONT_MAP = {
@@ -36,6 +40,11 @@ const COMPANION_PRESETS = {
   flame: 'presets/flame.gif',
   heart: 'presets/heart.gif',
   star: 'presets/star.gif'
+};
+
+const WALKER_PRESETS = {
+  goblin: 'presets/goblin_walk.gif',
+  cat: 'presets/cat_walk.gif'
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -83,13 +92,28 @@ const gifStatusLabel = document.getElementById('gif-status-label');
 const companionPosButtons = document.querySelectorAll('#companion-pos-options .segment-btn');
 const gifUploadInput = document.getElementById('gif-upload-input');
 const removeGifBtn = document.getElementById('remove-gif-btn');
-const presetPillButtons = document.querySelectorAll('.preset-pill-btn');
+const presetPillButtons = document.querySelectorAll('#companion-presets .preset-pill-btn');
+
+const borderWalkerEl = document.getElementById('border-walker');
+const borderWalkerImg = document.getElementById('border-walker-img');
+const walkerStatusLabel = document.getElementById('walker-status-label');
+const walkerModeButtons = document.querySelectorAll('#walker-mode-options .segment-btn');
+const walkerUploadInput = document.getElementById('walker-upload-input');
+const walkerToggleBtn = document.getElementById('walker-toggle-btn');
+const walkerToggleText = document.getElementById('walker-toggle-text');
+const walkerPresetButtons = document.querySelectorAll('#walker-presets .preset-pill-btn');
 
 let wakeLock = null;
 let hideTimer = null;
 let lastHour = '';
 let lastMin = '';
 let lastAmPm = '';
+
+let walkerRafId = null;
+let walkerLastTime = 0;
+let walkerDist = 0;
+let walkerFloorX = 12;
+let walkerFloorDirection = 1;
 
 function updateTime() {
   const now = new Date();
@@ -341,6 +365,132 @@ function applyGif(persist = true) {
   }
 }
 
+function updateWalkerAnimation(timestamp) {
+  if (!settings.walkerEnabled) {
+    return;
+  }
+
+  if (!walkerLastTime) {
+    walkerLastTime = timestamp;
+  }
+  const dt = Math.min((timestamp - walkerLastTime) / 1000, 0.1);
+  walkerLastTime = timestamp;
+
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const inset = 12;
+  const size = 48;
+  const speed = 70;
+
+  if (settings.walkerMode === 'perimeter') {
+    const d1 = Math.max(10, w - 2 * inset - size);
+    const d2 = Math.max(10, h - 2 * inset - size);
+    const totalDist = 2 * (d1 + d2);
+
+    walkerDist = (walkerDist + speed * dt) % totalDist;
+
+    let x = inset;
+    let y = h - inset - size;
+    let rot = 0;
+    let flip = 1;
+
+    if (walkerDist < d1) {
+      x = inset + walkerDist;
+      y = h - inset - size;
+      rot = 0;
+      flip = 1;
+    } else if (walkerDist < d1 + d2) {
+      const seg = walkerDist - d1;
+      x = w - inset - size;
+      y = h - inset - size - seg;
+      rot = -90;
+      flip = 1;
+    } else if (walkerDist < 2 * d1 + d2) {
+      const seg = walkerDist - (d1 + d2);
+      x = w - inset - size - seg;
+      y = inset;
+      rot = 180;
+      flip = 1;
+    } else {
+      const seg = walkerDist - (2 * d1 + d2);
+      x = inset;
+      y = inset + seg;
+      rot = 90;
+      flip = 1;
+    }
+
+    borderWalkerEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip})`;
+  } else {
+    const minX = inset;
+    const maxX = Math.max(minX + 10, w - inset - size);
+    walkerFloorX += walkerFloorDirection * speed * dt;
+    if (walkerFloorX >= maxX) {
+      walkerFloorX = maxX;
+      walkerFloorDirection = -1;
+    } else if (walkerFloorX <= minX) {
+      walkerFloorX = minX;
+      walkerFloorDirection = 1;
+    }
+    const y = h - inset - size;
+    borderWalkerEl.style.transform = `translate3d(${walkerFloorX}px, ${y}px, 0) scaleX(${walkerFloorDirection})`;
+  }
+
+  walkerRafId = requestAnimationFrame(updateWalkerAnimation);
+}
+
+function startWalker() {
+  if (walkerRafId) {
+    cancelAnimationFrame(walkerRafId);
+  }
+  walkerLastTime = 0;
+  borderWalkerEl.classList.remove('hidden');
+  walkerRafId = requestAnimationFrame(updateWalkerAnimation);
+}
+
+function stopWalker() {
+  if (walkerRafId) {
+    cancelAnimationFrame(walkerRafId);
+    walkerRafId = null;
+  }
+  borderWalkerEl.classList.add('hidden');
+}
+
+function applyWalker(persist = true) {
+  if (settings.walkerEnabled && settings.walkerSprite) {
+    borderWalkerImg.src = settings.walkerSprite;
+    startWalker();
+    walkerStatusLabel.textContent = settings.walkerName || 'Active';
+    walkerToggleText.textContent = 'Disable';
+  } else {
+    stopWalker();
+    walkerStatusLabel.textContent = 'Off';
+    walkerToggleText.textContent = 'Enable';
+  }
+
+  walkerModeButtons.forEach(btn => {
+    if (btn.dataset.mode === settings.walkerMode) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  walkerPresetButtons.forEach(btn => {
+    const wKey = btn.dataset.walker;
+    if (wKey === 'off' && !settings.walkerEnabled) {
+      btn.classList.add('active');
+    } else if (settings.walkerEnabled && settings.walkerName === wKey) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (persist) {
+    saveSettings();
+  }
+}
+
 function isFullscreen() {
   return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
@@ -383,6 +533,7 @@ function initUI() {
   applyZoom(settings.zoom, false);
   applyFormat(settings.format, false);
   applyGif(false);
+  applyWalker(false);
   updateFullscreenUI();
   updateTime();
 }
@@ -470,6 +621,54 @@ presetPillButtons.forEach(btn => {
       settings.gifName = presetKey;
     }
     applyGif();
+    resetHideTimer();
+  });
+});
+
+walkerToggleBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settings.walkerEnabled = !settings.walkerEnabled;
+  applyWalker();
+  resetHideTimer();
+});
+
+walkerModeButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settings.walkerMode = btn.dataset.mode;
+    applyWalker();
+    resetHideTimer();
+  });
+});
+
+walkerUploadInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      settings.walkerSprite = event.target.result;
+      settings.walkerName = file.name;
+      settings.walkerEnabled = true;
+      applyWalker();
+      resetHideTimer();
+    };
+    reader.readAsDataURL(file);
+  }
+  walkerUploadInput.value = '';
+});
+
+walkerPresetButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const wKey = btn.dataset.walker;
+    if (wKey === 'off') {
+      settings.walkerEnabled = false;
+    } else if (WALKER_PRESETS[wKey]) {
+      settings.walkerSprite = WALKER_PRESETS[wKey];
+      settings.walkerName = wKey;
+      settings.walkerEnabled = true;
+    }
+    applyWalker();
     resetHideTimer();
   });
 });
