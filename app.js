@@ -125,13 +125,13 @@ function loadSettings() {
       const parsed = JSON.parse(saved);
       settings = { ...DEFAULT_SETTINGS, ...parsed };
     }
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function saveSettings() {
   try {
     localStorage.setItem('nightstand_clock_settings_v1', JSON.stringify(settings));
-  } catch (e) {}
+  } catch (e) { }
 }
 
 const clockContainer = document.getElementById('clock-container');
@@ -528,7 +528,7 @@ function applyGif(persist = true) {
 function triggerWalkerState(walker, state, duration) {
   walker.state = state;
   walker.stateTimer = duration;
-  const data = HEROES[walker.heroKey];
+  const data = HEROES[walker.heroKey] || HEROES.warrior;
   if (data && data[state]) {
     walker.imgEl.src = data[state];
   }
@@ -788,13 +788,13 @@ function toggleFullscreen() {
   if (!isFullscreen()) {
     const docEl = document.documentElement;
     if (docEl.requestFullscreen) {
-      docEl.requestFullscreen().catch(() => {});
+      docEl.requestFullscreen().catch(() => { });
     } else if (docEl.webkitRequestFullscreen) {
       docEl.webkitRequestFullscreen();
     }
   } else {
     if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
+      document.exitFullscreen().catch(() => { });
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
     }
@@ -1073,7 +1073,7 @@ if (keepAwakeVideo) {
   keepAwakeVideo.addEventListener('playing', () => setWakeLockUI(true));
   keepAwakeVideo.addEventListener('pause', checkKeepAwakeStatus);
   keepAwakeVideo.addEventListener('ended', () => {
-    keepAwakeVideo.play().catch(() => {});
+    keepAwakeVideo.play().catch(() => { });
   });
 }
 
@@ -1088,7 +1088,7 @@ setInterval(() => {
       requestWakeLock();
     }
     if (keepAwakeVideo && keepAwakeVideo.paused) {
-      keepAwakeVideo.play().catch(() => {});
+      keepAwakeVideo.play().catch(() => { });
     }
   }
   checkKeepAwakeStatus();
@@ -1123,6 +1123,6 @@ if ('serviceWorker' in navigator) {
         }
       });
       checkForAppUpdate(false);
-    }).catch(() => {});
+    }).catch(() => { });
   });
 }

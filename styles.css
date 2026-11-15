@@ -61,6 +61,13 @@
   display: block;
 }
 
+.companion-img:not([src]),
+.companion-img[src=""],
+.walker-entity-img:not([src]),
+.walker-entity-img[src=""] {
+  display: none !important;
+}
+
 .hero-selector {
   display: flex;
   flex-wrap: wrap;
@@ -145,36 +152,7 @@ html, body {
 }
 
 @media (orientation: portrait) {
-  .update-toast {
-  position: fixed;
-  top: max(16px, env(safe-area-inset-top));
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 18px;
-  background: rgba(18, 18, 20, 0.94);
-  border: 1px solid rgba(48, 209, 88, 0.5);
-  border-radius: 999px;
-  color: #30D158;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.78rem;
-  font-weight: 500;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 200;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
-  transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-.update-toast.hidden {
-  opacity: 0;
-  transform: translate(-50%, -20px);
-  pointer-events: none;
-}
-
-.rotate-hint {
+  .rotate-hint {
     display: flex;
   }
 }
@@ -210,41 +188,7 @@ html, body {
   flex-shrink: 0;
 }
 
-.companion-wrapper.update-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 2px;
-}
-
-.update-btn {
-  flex: 1;
-  justify-content: center;
-}
-
-.repo-link-btn {
-  text-decoration: none;
-  color: #cccccc;
-}
-
-.repo-link-btn:hover {
-  color: #ffffff;
-}
-
-.update-icon.spinning {
-  animation: spinIcon 1s linear infinite;
-}
-
-@keyframes spinIcon {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.hidden {
+.companion-wrapper.hidden {
   display: none !important;
 }
 
