@@ -646,6 +646,68 @@ input[type="range"]::-moz-range-thumb {
   color: #ffffff;
 }
 
+.dim-schedule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: opacity 0.2s ease;
+}
+
+.dim-schedule-body.disabled {
+  opacity: 0.45;
+}
+
+.dim-schedule-times {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dim-time-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+}
+
+.dim-time-label {
+  font-size: 0.72rem;
+  color: #999999;
+  font-weight: 500;
+}
+
+.dim-time-input {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  color-scheme: dark;
+  padding: 0;
+}
+
+.dim-brightness-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dim-brightness-row .slider-wrapper {
+  flex: 1;
+}
+
+.dim-brightness-row .setting-value {
+  min-width: 34px;
+  text-align: right;
+}
+
 .update-controls {
   display: flex;
   align-items: center;

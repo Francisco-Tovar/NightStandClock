@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.2';
+const APP_VERSION = 'v1.4.3';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -7,6 +7,10 @@ const DEFAULT_SETTINGS = {
   zoom: 100,
   format: '12',
   hideTopBar: false,
+  dimScheduleEnabled: false,
+  dimStartTime: '22:00',
+  dimEndTime: '06:00',
+  dimBrightness: 30,
   gifData: '',
   gifName: '',
   gifPos: 'right',
@@ -155,6 +159,13 @@ const fontButtons = document.querySelectorAll('#font-options .segment-btn');
 const formatButtons = document.querySelectorAll('#format-options .segment-btn');
 const topbarStatusLabel = document.getElementById('topbar-status-label');
 const topbarButtons = document.querySelectorAll('#topbar-options .segment-btn');
+const dimScheduleStatus = document.getElementById('dim-schedule-status');
+const dimScheduleButtons = document.querySelectorAll('#dim-schedule-options .segment-btn');
+const dimScheduleBody = document.getElementById('dim-schedule-body');
+const dimStartInput = document.getElementById('dim-start-input');
+const dimEndInput = document.getElementById('dim-end-input');
+const dimBrightnessSlider = document.getElementById('dim-brightness-slider');
+const dimBrightnessValue = document.getElementById('dim-brightness-value');
 const brightnessSlider = document.getElementById('brightness-slider');
 const brightnessValue = document.getElementById('brightness-value');
 const zoomSlider = document.getElementById('zoom-slider');
@@ -315,6 +326,8 @@ function updateTime() {
   } else {
     ampmEl.classList.add('hidden');
   }
+
+  updateEffectiveBrightness(now);
 }
 
 function shiftClockPosition() {
@@ -447,12 +460,99 @@ function applyFont(fontKey, persist = true) {
   }
 }
 
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) {
+    return null;
+  }
+  const parts = timeStr.split(':');
+  const h = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) {
+    return null;
+  }
+  return h * 60 + m;
+}
+
+function isWithinDimSchedule(now = new Date()) {
+  if (!settings.dimScheduleEnabled) {
+    return false;
+  }
+  const startMin = parseTimeToMinutes(settings.dimStartTime);
+  const endMin = parseTimeToMinutes(settings.dimEndTime);
+  if (startMin === null || endMin === null || startMin === endMin) {
+    return false;
+  }
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  if (startMin < endMin) {
+    return nowMin >= startMin && nowMin < endMin;
+  }
+  return nowMin >= startMin || nowMin < endMin;
+}
+
+function getEffectiveBrightness(now = new Date()) {
+  if (isWithinDimSchedule(now)) {
+    return Math.min(100, Math.max(10, parseInt(settings.dimBrightness, 10) || 30));
+  }
+  return Math.min(100, Math.max(10, parseInt(settings.brightness, 10) || 100));
+}
+
+function updateEffectiveBrightness(now = new Date()) {
+  const effective = getEffectiveBrightness(now);
+  document.documentElement.style.setProperty('--clock-opacity', (effective / 100).toFixed(2));
+  if (dimScheduleStatus) {
+    if (!settings.dimScheduleEnabled) {
+      dimScheduleStatus.textContent = 'Off';
+    } else if (isWithinDimSchedule(now)) {
+      dimScheduleStatus.textContent = `Active (${effective}%)`;
+    } else {
+      dimScheduleStatus.textContent = `${settings.dimStartTime} - ${settings.dimEndTime}`;
+    }
+  }
+}
+
 function applyBrightness(val, persist = true) {
   const num = Math.min(100, Math.max(10, parseInt(val, 10) || 100));
   settings.brightness = num;
-  document.documentElement.style.setProperty('--clock-opacity', (num / 100).toFixed(2));
   brightnessSlider.value = num;
   brightnessValue.textContent = `${num}%`;
+  updateEffectiveBrightness();
+
+  if (persist) {
+    saveSettings();
+  }
+}
+
+function applyDimSchedule(persist = true) {
+  const enabled = Boolean(settings.dimScheduleEnabled);
+  const dimVal = Math.min(100, Math.max(10, parseInt(settings.dimBrightness, 10) || 30));
+  settings.dimBrightness = dimVal;
+
+  dimScheduleButtons.forEach(btn => {
+    const isOnBtn = btn.dataset.dim === 'on';
+    if (isOnBtn === enabled) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (dimScheduleBody) {
+    dimScheduleBody.classList.toggle('disabled', !enabled);
+  }
+  if (dimStartInput) {
+    dimStartInput.value = settings.dimStartTime || '22:00';
+  }
+  if (dimEndInput) {
+    dimEndInput.value = settings.dimEndTime || '06:00';
+  }
+  if (dimBrightnessSlider) {
+    dimBrightnessSlider.value = dimVal;
+  }
+  if (dimBrightnessValue) {
+    dimBrightnessValue.textContent = `${dimVal}%`;
+  }
+
+  updateEffectiveBrightness();
 
   if (persist) {
     saveSettings();
@@ -862,6 +962,7 @@ function initUI() {
   applyColor(settings.color, false);
   applyFont(settings.font, false);
   applyBrightness(settings.brightness, false);
+  applyDimSchedule(false);
   applyZoom(settings.zoom, false);
   applyFormat(settings.format, false);
   applyTopBar(false);
@@ -1002,6 +1103,52 @@ topbarButtons.forEach(btn => {
     resetHideTimer();
   });
 });
+
+dimScheduleButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settings.dimScheduleEnabled = btn.dataset.dim === 'on';
+    applyDimSchedule(true);
+    resetHideTimer();
+  });
+});
+
+if (dimStartInput) {
+  dimStartInput.addEventListener('change', (e) => {
+    e.stopPropagation();
+    if (e.target.value) {
+      settings.dimStartTime = e.target.value;
+      applyDimSchedule(true);
+    }
+    resetHideTimer();
+  });
+}
+
+if (dimEndInput) {
+  dimEndInput.addEventListener('change', (e) => {
+    e.stopPropagation();
+    if (e.target.value) {
+      settings.dimEndTime = e.target.value;
+      applyDimSchedule(true);
+    }
+    resetHideTimer();
+  });
+}
+
+if (dimBrightnessSlider) {
+  dimBrightnessSlider.addEventListener('input', (e) => {
+    e.stopPropagation();
+    settings.dimBrightness = parseInt(e.target.value, 10) || 30;
+    applyDimSchedule(false);
+    resetHideTimer();
+  });
+  dimBrightnessSlider.addEventListener('change', (e) => {
+    e.stopPropagation();
+    settings.dimBrightness = parseInt(e.target.value, 10) || 30;
+    applyDimSchedule(true);
+    resetHideTimer();
+  });
+}
 
 checkUpdateBtn.addEventListener('click', (e) => {
   e.stopPropagation();
