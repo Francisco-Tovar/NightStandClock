@@ -95,12 +95,47 @@ html, body {
   width: 100%;
   height: 100%;
   display: flex;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   transform: translate(var(--shift-x), var(--shift-y));
   transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
   opacity: var(--clock-opacity);
+}
+
+.companion-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.companion-wrapper.hidden {
+  display: none !important;
+}
+
+.companion-wrapper.pos-left {
+  order: -1;
+  margin-right: clamp(14px, 3.5vw, 40px);
+  margin-left: 0;
+}
+
+.companion-wrapper.pos-right {
+  order: 1;
+  margin-left: clamp(14px, 3.5vw, 40px);
+  margin-right: 0;
+}
+
+.companion-img {
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-crisp-edges;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: calc(clamp(40px, 10vw, 105px) * var(--clock-zoom));
+  height: calc(clamp(40px, 10vw, 105px) * var(--clock-zoom));
+  object-fit: contain;
+  display: block;
 }
 
 .clock-display {
@@ -396,6 +431,10 @@ html, body {
   gap: 2px;
 }
 
+.compact-control {
+  flex: 0 0 95px;
+}
+
 .segment-btn {
   flex: 1;
   background: transparent;
@@ -469,6 +508,65 @@ input[type="range"]::-moz-range-thumb {
   border: none;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   cursor: pointer;
+}
+
+.companion-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.companion-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+.file-upload-label {
+  position: relative;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.file-upload-label input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.companion-presets {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.preset-pill-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #aaaaaa;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  padding: 3px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.preset-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+.preset-pill-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
 }
 
 .hidden {

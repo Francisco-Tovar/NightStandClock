@@ -3,7 +3,10 @@ const DEFAULT_SETTINGS = {
   font: 'sans',
   brightness: 100,
   zoom: 100,
-  format: '12'
+  format: '12',
+  gifData: '',
+  gifName: '',
+  gifPos: 'right'
 };
 
 const FONT_MAP = {
@@ -29,6 +32,12 @@ const FONT_MAP = {
   }
 };
 
+const COMPANION_PRESETS = {
+  flame: 'presets/flame.gif',
+  heart: 'presets/heart.gif',
+  star: 'presets/star.gif'
+};
+
 let settings = { ...DEFAULT_SETTINGS };
 
 function loadSettings() {
@@ -48,6 +57,8 @@ function saveSettings() {
 }
 
 const clockContainer = document.getElementById('clock-container');
+const companionWrapper = document.getElementById('companion-wrapper');
+const companionImg = document.getElementById('companion-img');
 const hoursEl = document.getElementById('hours');
 const minutesEl = document.getElementById('minutes');
 const ampmEl = document.getElementById('ampm');
@@ -68,6 +79,11 @@ const brightnessValue = document.getElementById('brightness-value');
 const zoomSlider = document.getElementById('zoom-slider');
 const zoomValue = document.getElementById('zoom-value');
 const keepAwakeVideo = document.getElementById('keep-awake-video');
+const gifStatusLabel = document.getElementById('gif-status-label');
+const companionPosButtons = document.querySelectorAll('#companion-pos-options .segment-btn');
+const gifUploadInput = document.getElementById('gif-upload-input');
+const removeGifBtn = document.getElementById('remove-gif-btn');
+const presetPillButtons = document.querySelectorAll('.preset-pill-btn');
 
 let wakeLock = null;
 let hideTimer = null;
@@ -285,6 +301,46 @@ function applyFormat(format, persist = true) {
   }
 }
 
+function applyGif(persist = true) {
+  if (settings.gifData) {
+    companionImg.src = settings.gifData;
+    companionWrapper.classList.remove('hidden');
+    gifStatusLabel.textContent = settings.gifName || 'Active';
+  } else {
+    companionImg.removeAttribute('src');
+    companionWrapper.classList.add('hidden');
+    gifStatusLabel.textContent = 'None';
+  }
+
+  if (settings.gifPos === 'left') {
+    companionWrapper.classList.add('pos-left');
+    companionWrapper.classList.remove('pos-right');
+  } else {
+    companionWrapper.classList.add('pos-right');
+    companionWrapper.classList.remove('pos-left');
+  }
+
+  companionPosButtons.forEach(btn => {
+    if (btn.dataset.pos === settings.gifPos) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  presetPillButtons.forEach(btn => {
+    if (settings.gifData && settings.gifName === btn.dataset.preset) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  if (persist) {
+    saveSettings();
+  }
+}
+
 function isFullscreen() {
   return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
@@ -326,6 +382,7 @@ function initUI() {
   applyBrightness(settings.brightness, false);
   applyZoom(settings.zoom, false);
   applyFormat(settings.format, false);
+  applyGif(false);
   updateFullscreenUI();
   updateTime();
 }
@@ -365,6 +422,54 @@ formatButtons.forEach(btn => {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     applyFormat(btn.dataset.format);
+    resetHideTimer();
+  });
+});
+
+companionPosButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    settings.gifPos = btn.dataset.pos;
+    applyGif();
+    resetHideTimer();
+  });
+});
+
+gifUploadInput.addEventListener('change', (e) => {
+  const file = e.target.files && e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      settings.gifData = event.target.result;
+      settings.gifName = file.name;
+      applyGif();
+      resetHideTimer();
+    };
+    reader.readAsDataURL(file);
+  }
+  gifUploadInput.value = '';
+});
+
+removeGifBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  settings.gifData = '';
+  settings.gifName = '';
+  applyGif();
+  resetHideTimer();
+});
+
+presetPillButtons.forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const presetKey = btn.dataset.preset;
+    if (settings.gifData && settings.gifName === presetKey) {
+      settings.gifData = '';
+      settings.gifName = '';
+    } else if (COMPANION_PRESETS[presetKey]) {
+      settings.gifData = COMPANION_PRESETS[presetKey];
+      settings.gifName = presetKey;
+    }
+    applyGif();
     resetHideTimer();
   });
 });
