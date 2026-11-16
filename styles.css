@@ -281,6 +281,7 @@ html, body {
 
 .clock-display.font-float {
   align-items: center;
+  font-size: calc(clamp(6.75rem, 34.5vw, 63vh) * var(--clock-zoom));
   text-shadow: none;
   isolation: isolate;
 }
