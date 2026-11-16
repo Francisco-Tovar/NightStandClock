@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.5';
+const APP_VERSION = 'v1.4.6';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -40,6 +40,10 @@ const FONT_MAP = {
   segment: {
     family: "'DSEG7 Classic', monospace",
     weight: '400'
+  },
+  float: {
+    family: "'Fredoka', 'SF Pro Rounded', 'Nunito', sans-serif",
+    weight: '700'
   }
 };
 
@@ -141,6 +145,7 @@ function saveSettings() {
 }
 
 const clockContainer = document.getElementById('clock-container');
+const clockDisplay = document.getElementById('clock-display');
 const companionWrapper = document.getElementById('companion-wrapper');
 const companionImg = document.getElementById('companion-img');
 const hoursEl = document.getElementById('hours');
@@ -302,6 +307,22 @@ async function checkForAppUpdate(isManual = false) {
   }
 }
 
+function renderDigitGroup(el, text, startIndex) {
+  if (settings.font === 'float') {
+    el.textContent = '';
+    const chars = String(text).split('');
+    const offset = chars.length === 1 && startIndex === 0 ? 1 : 0;
+    chars.forEach((ch, idx) => {
+      const span = document.createElement('span');
+      span.className = `float-digit d${startIndex + offset + idx}`;
+      span.textContent = ch;
+      el.appendChild(span);
+    });
+  } else {
+    el.textContent = text;
+  }
+}
+
 function updateTime() {
   const now = new Date();
   const rawHours = now.getHours();
@@ -321,12 +342,12 @@ function updateTime() {
   const formattedMinutes = String(rawMinutes).padStart(2, '0');
 
   if (formattedHours !== lastHour) {
-    hoursEl.textContent = formattedHours;
+    renderDigitGroup(hoursEl, formattedHours, 0);
     lastHour = formattedHours;
   }
 
   if (formattedMinutes !== lastMin) {
-    minutesEl.textContent = formattedMinutes;
+    renderDigitGroup(minutesEl, formattedMinutes, 2);
     lastMin = formattedMinutes;
   }
 
@@ -459,6 +480,12 @@ function applyFont(fontKey, persist = true) {
   settings.font = fontKey;
   document.documentElement.style.setProperty('--clock-font', fontData.family);
   document.documentElement.style.setProperty('--clock-weight', fontData.weight);
+  if (clockDisplay) {
+    clockDisplay.classList.toggle('font-float', fontKey === 'float');
+  }
+  lastHour = '';
+  lastMin = '';
+  updateTime();
 
   fontButtons.forEach(btn => {
     if (btn.dataset.font === fontKey) {

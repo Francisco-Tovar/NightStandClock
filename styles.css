@@ -279,6 +279,81 @@ html, body {
   }
 }
 
+.clock-display.font-float {
+  align-items: center;
+  text-shadow: none;
+  isolation: isolate;
+}
+
+.clock-display.font-float .time-digit {
+  display: inline-flex;
+  align-items: center;
+}
+
+.float-digit {
+  display: inline-block;
+  line-height: 0.85;
+  mix-blend-mode: screen;
+}
+
+.float-digit.d0 {
+  color: color-mix(in srgb, var(--clock-color) 84%, #000000);
+  transform: rotate(-4deg) translateY(0.02em);
+  margin-right: -0.11em;
+  z-index: 1;
+}
+
+.float-digit.d1 {
+  color: color-mix(in srgb, var(--clock-color) 56%, #ffffff);
+  transform: rotate(3deg) translateY(-0.02em);
+  z-index: 2;
+}
+
+.float-digit.d2 {
+  color: color-mix(in srgb, var(--clock-color) 84%, #000000);
+  transform: rotate(-3deg) translateY(0.01em);
+  margin-right: -0.10em;
+  z-index: 1;
+}
+
+.float-digit.d3 {
+  color: color-mix(in srgb, var(--clock-color) 56%, #ffffff);
+  transform: rotate(4deg) translateY(-0.01em);
+  z-index: 2;
+}
+
+.clock-display.font-float .colon {
+  position: relative;
+  color: transparent;
+  width: 0.20em;
+  height: 0.68em;
+  margin: 0 -0.05em;
+  animation: none;
+  transform: none;
+  z-index: 6;
+}
+
+.clock-display.font-float .colon::before,
+.clock-display.font-float .colon::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  width: 0.20em;
+  height: 0.20em;
+  margin-left: -0.10em;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, color-mix(in srgb, var(--clock-color) 28%, #e2e8f0) 100%);
+  box-shadow: 0 0.02em 0.08em rgba(0, 0, 0, 0.55);
+}
+
+.clock-display.font-float .colon::before {
+  top: 0.07em;
+}
+
+.clock-display.font-float .colon::after {
+  bottom: 0.07em;
+}
+
 .ampm {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: calc(clamp(0.9rem, 3.8vw, 6vh) * var(--clock-zoom));
