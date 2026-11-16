@@ -204,9 +204,9 @@ let bossEvent = {
   active: false,
   boss: null,
   hp: 0,
-  maxHp: 100,
+  maxHp: 450,
   nextTriggerTimer: 22 + Math.random() * 20,
-  bossAttackTimer: 2.0,
+  bossAttackTimer: 1.5,
   defeatedTimer: 0
 };
 
@@ -682,7 +682,7 @@ function createWalkerEntity(heroKey, startOffset, startDirection, startFloorX) {
   domEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
     if (bossEvent.active && bossEvent.boss === walker && bossEvent.hp > 0) {
-      damageBoss(12);
+      damageBoss(20);
     } else {
       const actions = ['s_attack', 'jump', 'attack'];
       const randomAct = actions[Math.floor(Math.random() * actions.length)];
@@ -720,9 +720,9 @@ function startBossBattle() {
   const boss = activeWalkers[bossIdx];
   bossEvent.active = true;
   bossEvent.boss = boss;
-  bossEvent.maxHp = 100;
-  bossEvent.hp = 100;
-  bossEvent.bossAttackTimer = 1.8;
+  bossEvent.maxHp = 450;
+  bossEvent.hp = 450;
+  bossEvent.bossAttackTimer = 1.5;
   bossEvent.defeatedTimer = 0;
 
   boss.targetScale = 2.0;
@@ -776,8 +776,8 @@ function damageBoss(amount) {
         triggerWalkerState(wkr, 'jump', 1.1);
       }
     }
-  } else if (boss.state === 'walk' || boss.state === 'idle') {
-    triggerWalkerState(boss, 'hurt', 0.3);
+  } else if ((boss.state === 'walk' || boss.state === 'idle') && Math.random() < 0.25) {
+    triggerWalkerState(boss, 'hurt', 0.25);
   }
 }
 
@@ -823,22 +823,22 @@ function updateWalkers(timestamp) {
           if (wkr !== boss) {
             const dx = Math.abs((wkr.currentX || 0) - (boss.currentX || 0));
             const dy = Math.abs((wkr.currentY || 0) - (boss.currentY || 0));
-            if (dx < 95 && dy < 95) {
-              triggerWalkerState(wkr, 'hurt', 0.65);
+            if (dx < 105 && dy < 105) {
+              triggerWalkerState(wkr, 'hurt', 0.85);
               if (settings.walkerMode === 'perimeter') {
                 const diff = ((wkr.dist - boss.dist + totalDist * 1.5) % totalDist) - totalDist * 0.5;
                 const pushDir = diff >= 0 ? 1 : -1;
-                wkr.dist = ((wkr.dist + pushDir * 16) % totalDist + totalDist) % totalDist;
+                wkr.dist = ((wkr.dist + pushDir * 28) % totalDist + totalDist) % totalDist;
               } else {
                 const pushDir = wkr.floorX >= boss.floorX ? 1 : -1;
                 const minX = inset;
                 const maxX = Math.max(minX + 10, w - inset - size);
-                wkr.floorX = Math.min(maxX, Math.max(minX, wkr.floorX + pushDir * 16));
+                wkr.floorX = Math.min(maxX, Math.max(minX, wkr.floorX + pushDir * 28));
               }
             }
           }
         }
-        bossEvent.bossAttackTimer = 1.8 + Math.random() * 1.2;
+        bossEvent.bossAttackTimer = 1.3 + Math.random() * 0.9;
       }
     }
   }
@@ -897,10 +897,10 @@ function updateWalkers(timestamp) {
             const roll = Math.random();
             if (roll < 0.45) {
               triggerWalkerState(wkr, 's_attack', 0.95);
-              damageBoss(12);
+              damageBoss(7);
             } else if (roll < 0.85) {
               triggerWalkerState(wkr, 'attack', 0.75);
-              damageBoss(8);
+              damageBoss(4);
             } else {
               triggerWalkerState(wkr, 'jump', 0.65);
             }
@@ -923,10 +923,10 @@ function updateWalkers(timestamp) {
             const roll = Math.random();
             if (roll < 0.45) {
               triggerWalkerState(wkr, 's_attack', 0.95);
-              damageBoss(12);
+              damageBoss(7);
             } else if (roll < 0.85) {
               triggerWalkerState(wkr, 'attack', 0.75);
-              damageBoss(8);
+              damageBoss(4);
             } else {
               triggerWalkerState(wkr, 'jump', 0.65);
             }
