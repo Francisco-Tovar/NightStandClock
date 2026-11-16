@@ -355,6 +355,17 @@ html, body {
   bottom: 0.07em;
 }
 
+.clock-display.font-float .ampm {
+  font-family: var(--clock-font);
+  font-weight: var(--clock-weight);
+  font-size: calc(clamp(1.2rem, 5vw, 8vh) * var(--clock-zoom));
+  color: color-mix(in srgb, var(--clock-color) 56%, #ffffff);
+  opacity: 0.9;
+  letter-spacing: -0.02em;
+  margin-left: 0.14em;
+  transform: rotate(3deg) translateY(0.25em);
+}
+
 .ampm {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: calc(clamp(0.9rem, 3.8vw, 6vh) * var(--clock-zoom));
