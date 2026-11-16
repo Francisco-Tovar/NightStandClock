@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nightstand-clock-v16';
+const CACHE_NAME = 'nightstand-clock-v17';
 
 const STATIC_ASSETS = [
   './',

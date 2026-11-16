@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.7';
+const APP_VERSION = 'v1.4.8';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -195,6 +195,7 @@ const checkUpdateBtn = document.getElementById('check-update-btn');
 const checkUpdateText = document.getElementById('check-update-text');
 const updateSpinner = document.getElementById('update-spinner');
 const updateStatusLabel = document.getElementById('update-status-label');
+const headerVersionBadge = document.getElementById('header-version-badge');
 const updateToast = document.getElementById('update-toast');
 const updateToastText = document.getElementById('update-toast-text');
 
@@ -1224,6 +1225,12 @@ function updateFullscreenUI() {
 
 function initUI() {
   loadSettings();
+  if (headerVersionBadge) {
+    headerVersionBadge.textContent = APP_VERSION;
+  }
+  if (updateStatusLabel) {
+    updateStatusLabel.textContent = APP_VERSION;
+  }
   applyColor(settings.color, false);
   applyFont(settings.font, false);
   applyBrightness(settings.brightness, false);
