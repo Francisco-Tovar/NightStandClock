@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.3';
+const APP_VERSION = 'v1.4.4';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -199,6 +199,16 @@ let lastAmPm = '';
 let activeWalkers = [];
 let walkerRafId = null;
 let walkerLastTime = 0;
+
+let bossEvent = {
+  active: false,
+  boss: null,
+  hp: 0,
+  maxHp: 100,
+  nextTriggerTimer: 22 + Math.random() * 20,
+  bossAttackTimer: 2.0,
+  defeatedTimer: 0
+};
 
 let swRegistration = null;
 let isCheckingUpdate = false;
@@ -637,7 +647,7 @@ function triggerWalkerState(walker, state, duration) {
   }
 }
 
-function createWalkerEntity(heroKey, startOffset, startDirection) {
+function createWalkerEntity(heroKey, startOffset, startDirection, startFloorX) {
   const hero = HEROES[heroKey] || HEROES.warrior;
   const domEl = document.createElement('div');
   domEl.className = 'walker-entity';
@@ -655,9 +665,14 @@ function createWalkerEntity(heroKey, startOffset, startDirection) {
     domEl,
     imgEl,
     dist: startOffset,
-    floorX: startOffset,
+    floorX: typeof startFloorX === 'number' ? startFloorX : startOffset,
     direction: startDirection,
     speed: actualSpeed,
+    scale: 1,
+    targetScale: 1,
+    engageOffset: 0,
+    hpBar: null,
+    hpFill: null,
     state: 'walk',
     stateTimer: 0,
     cooldown: 2,
@@ -666,14 +681,104 @@ function createWalkerEntity(heroKey, startOffset, startDirection) {
 
   domEl.addEventListener('pointerdown', (e) => {
     e.stopPropagation();
-    const actions = ['s_attack', 'jump', 'attack'];
-    const randomAct = actions[Math.floor(Math.random() * actions.length)];
-    triggerWalkerState(walker, randomAct, 1.1);
+    if (bossEvent.active && bossEvent.boss === walker && bossEvent.hp > 0) {
+      damageBoss(12);
+    } else {
+      const actions = ['s_attack', 'jump', 'attack'];
+      const randomAct = actions[Math.floor(Math.random() * actions.length)];
+      triggerWalkerState(walker, randomAct, 1.1);
+    }
     enableKeepAwake();
   });
 
   borderWalkerLayer.appendChild(domEl);
   return walker;
+}
+
+function resetBossEvent() {
+  if (bossEvent.boss) {
+    bossEvent.boss.domEl.classList.remove('is-boss');
+    if (bossEvent.boss.hpBar) {
+      bossEvent.boss.hpBar.remove();
+      bossEvent.boss.hpBar = null;
+      bossEvent.boss.hpFill = null;
+    }
+    bossEvent.boss.targetScale = 1;
+  }
+  bossEvent.active = false;
+  bossEvent.boss = null;
+  bossEvent.hp = 0;
+  bossEvent.defeatedTimer = 0;
+  bossEvent.nextTriggerTimer = 25 + Math.random() * 25;
+}
+
+function startBossBattle() {
+  if (activeWalkers.length < 2) {
+    return;
+  }
+  const bossIdx = Math.floor(Math.random() * activeWalkers.length);
+  const boss = activeWalkers[bossIdx];
+  bossEvent.active = true;
+  bossEvent.boss = boss;
+  bossEvent.maxHp = 100;
+  bossEvent.hp = 100;
+  bossEvent.bossAttackTimer = 1.8;
+  bossEvent.defeatedTimer = 0;
+
+  boss.targetScale = 2.0;
+  boss.domEl.classList.add('is-boss');
+
+  const hpBar = document.createElement('div');
+  hpBar.className = 'boss-hp-bar';
+  const hpFill = document.createElement('div');
+  hpFill.className = 'boss-hp-fill';
+  hpBar.appendChild(hpFill);
+  boss.domEl.appendChild(hpBar);
+  boss.hpBar = hpBar;
+  boss.hpFill = hpFill;
+
+  triggerWalkerState(boss, 's_attack', 1.4);
+
+  const offsets = [-72, 72, -56, 56, -88, 88];
+  let slot = 0;
+  for (let i = 0; i < activeWalkers.length; i++) {
+    const wkr = activeWalkers[i];
+    if (wkr !== boss) {
+      wkr.engageOffset = offsets[slot % offsets.length];
+      slot++;
+      triggerWalkerState(wkr, 'walk', 0);
+    }
+  }
+}
+
+function damageBoss(amount) {
+  if (!bossEvent.active || !bossEvent.boss || bossEvent.hp <= 0) {
+    return;
+  }
+  const boss = bossEvent.boss;
+  bossEvent.hp = Math.max(0, bossEvent.hp - amount);
+  if (boss.hpFill) {
+    boss.hpFill.style.width = `${(bossEvent.hp / bossEvent.maxHp) * 100}%`;
+  }
+
+  if (bossEvent.hp <= 0) {
+    triggerWalkerState(boss, 'hurt', 1.2);
+    boss.targetScale = 1.0;
+    if (boss.hpBar) {
+      boss.hpBar.remove();
+      boss.hpBar = null;
+      boss.hpFill = null;
+    }
+    bossEvent.defeatedTimer = 1.4;
+    for (let i = 0; i < activeWalkers.length; i++) {
+      const wkr = activeWalkers[i];
+      if (wkr !== boss) {
+        triggerWalkerState(wkr, 'jump', 1.1);
+      }
+    }
+  } else if (boss.state === 'walk' || boss.state === 'idle') {
+    triggerWalkerState(boss, 'hurt', 0.3);
+  }
 }
 
 function updateWalkers(timestamp) {
@@ -696,8 +801,52 @@ function updateWalkers(timestamp) {
   const d2 = Math.max(10, h - 2 * inset - size);
   const totalDist = 2 * (d1 + d2);
 
+  if (settings.walkerDensity === 'all' && activeWalkers.length > 1) {
+    if (!bossEvent.active) {
+      bossEvent.nextTriggerTimer -= dt;
+      if (bossEvent.nextTriggerTimer <= 0) {
+        startBossBattle();
+      }
+    } else if (bossEvent.defeatedTimer > 0) {
+      bossEvent.defeatedTimer -= dt;
+      if (bossEvent.defeatedTimer <= 0) {
+        resetBossEvent();
+      }
+    } else if (bossEvent.boss && bossEvent.hp > 0) {
+      bossEvent.bossAttackTimer -= dt;
+      if (bossEvent.bossAttackTimer <= 0) {
+        const boss = bossEvent.boss;
+        const bossAct = Math.random() < 0.55 ? 's_attack' : 'attack';
+        triggerWalkerState(boss, bossAct, 1.0);
+        for (let i = 0; i < activeWalkers.length; i++) {
+          const wkr = activeWalkers[i];
+          if (wkr !== boss) {
+            const dx = Math.abs((wkr.currentX || 0) - (boss.currentX || 0));
+            const dy = Math.abs((wkr.currentY || 0) - (boss.currentY || 0));
+            if (dx < 95 && dy < 95) {
+              triggerWalkerState(wkr, 'hurt', 0.65);
+              if (settings.walkerMode === 'perimeter') {
+                const diff = ((wkr.dist - boss.dist + totalDist * 1.5) % totalDist) - totalDist * 0.5;
+                const pushDir = diff >= 0 ? 1 : -1;
+                wkr.dist = ((wkr.dist + pushDir * 16) % totalDist + totalDist) % totalDist;
+              } else {
+                const pushDir = wkr.floorX >= boss.floorX ? 1 : -1;
+                const minX = inset;
+                const maxX = Math.max(minX + 10, w - inset - size);
+                wkr.floorX = Math.min(maxX, Math.max(minX, wkr.floorX + pushDir * 16));
+              }
+            }
+          }
+        }
+        bossEvent.bossAttackTimer = 1.8 + Math.random() * 1.2;
+      }
+    }
+  }
+
   for (let i = 0; i < activeWalkers.length; i++) {
     const wkr = activeWalkers[i];
+
+    wkr.scale += (wkr.targetScale - wkr.scale) * Math.min(1, dt * 6);
 
     if (wkr.cooldown > 0) {
       wkr.cooldown -= dt;
@@ -708,7 +857,7 @@ function updateWalkers(timestamp) {
       if (wkr.stateTimer <= 0) {
         triggerWalkerState(wkr, 'walk', 0);
       }
-    } else {
+    } else if (!bossEvent.active) {
       wkr.actionTimer -= dt;
       if (wkr.actionTimer <= 0) {
         const roll = Math.random();
@@ -727,13 +876,71 @@ function updateWalkers(timestamp) {
       }
     }
 
-    if (wkr.state === 'walk') {
+    const inBossBattle = bossEvent.active && bossEvent.boss && bossEvent.hp > 0;
+    const isBoss = inBossBattle && wkr === bossEvent.boss;
+
+    if (inBossBattle && !isBoss) {
+      const boss = bossEvent.boss;
       if (settings.walkerMode === 'perimeter') {
-        wkr.dist = ((wkr.dist + wkr.direction * wkr.speed * dt) % totalDist + totalDist) % totalDist;
+        const targetDist = ((boss.dist + wkr.engageOffset) % totalDist + totalDist) % totalDist;
+        const diff = ((targetDist - wkr.dist + totalDist * 1.5) % totalDist) - totalDist * 0.5;
+        const bossDiff = ((boss.dist - wkr.dist + totalDist * 1.5) % totalDist) - totalDist * 0.5;
+
+        if (Math.abs(diff) > 14) {
+          wkr.direction = diff >= 0 ? 1 : -1;
+          if (wkr.state === 'walk') {
+            wkr.dist = ((wkr.dist + wkr.direction * wkr.speed * 1.45 * dt) % totalDist + totalDist) % totalDist;
+          }
+        } else {
+          wkr.direction = bossDiff >= 0 ? 1 : -1;
+          if (wkr.state === 'walk') {
+            const roll = Math.random();
+            if (roll < 0.45) {
+              triggerWalkerState(wkr, 's_attack', 0.95);
+              damageBoss(12);
+            } else if (roll < 0.85) {
+              triggerWalkerState(wkr, 'attack', 0.75);
+              damageBoss(8);
+            } else {
+              triggerWalkerState(wkr, 'jump', 0.65);
+            }
+          }
+        }
       } else {
         const minX = inset;
         const maxX = Math.max(minX + 10, w - inset - size);
-        wkr.floorX += wkr.direction * wkr.speed * dt;
+        const targetX = Math.min(maxX, Math.max(minX, boss.floorX + wkr.engageOffset));
+        const diff = targetX - wkr.floorX;
+
+        if (Math.abs(diff) > 14) {
+          wkr.direction = diff >= 0 ? 1 : -1;
+          if (wkr.state === 'walk') {
+            wkr.floorX = Math.min(maxX, Math.max(minX, wkr.floorX + wkr.direction * wkr.speed * 1.45 * dt));
+          }
+        } else {
+          wkr.direction = boss.floorX >= wkr.floorX ? 1 : -1;
+          if (wkr.state === 'walk') {
+            const roll = Math.random();
+            if (roll < 0.45) {
+              triggerWalkerState(wkr, 's_attack', 0.95);
+              damageBoss(12);
+            } else if (roll < 0.85) {
+              triggerWalkerState(wkr, 'attack', 0.75);
+              damageBoss(8);
+            } else {
+              triggerWalkerState(wkr, 'jump', 0.65);
+            }
+          }
+        }
+      }
+    } else if (wkr.state === 'walk') {
+      const moveSpeed = isBoss ? wkr.speed * 0.45 : wkr.speed;
+      if (settings.walkerMode === 'perimeter') {
+        wkr.dist = ((wkr.dist + wkr.direction * moveSpeed * dt) % totalDist + totalDist) % totalDist;
+      } else {
+        const minX = inset;
+        const maxX = Math.max(minX + 10, w - inset - size);
+        wkr.floorX += wkr.direction * moveSpeed * dt;
         if (wkr.floorX >= maxX) {
           wkr.floorX = maxX;
           wkr.direction = -1;
@@ -773,16 +980,22 @@ function updateWalkers(timestamp) {
 
       wkr.currentX = x;
       wkr.currentY = y;
-      wkr.domEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip})`;
+      wkr.domEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip * wkr.scale}) scaleY(${wkr.scale})`;
+      if (wkr.hpBar) {
+        wkr.hpBar.style.transform = `scaleX(${flip})`;
+      }
     } else {
       const y = h - inset - size;
       wkr.currentX = wkr.floorX;
       wkr.currentY = y;
-      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.direction})`;
+      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.direction * wkr.scale}) scaleY(${wkr.scale})`;
+      if (wkr.hpBar) {
+        wkr.hpBar.style.transform = `scaleX(${wkr.direction})`;
+      }
     }
   }
 
-  if (activeWalkers.length > 1) {
+  if (!bossEvent.active && activeWalkers.length > 1) {
     for (let i = 0; i < activeWalkers.length; i++) {
       for (let j = i + 1; j < activeWalkers.length; j++) {
         const a = activeWalkers[i];
@@ -823,6 +1036,7 @@ function stopWalkers() {
     cancelAnimationFrame(walkerRafId);
     walkerRafId = null;
   }
+  resetBossEvent();
   borderWalkerLayer.innerHTML = '';
   activeWalkers = [];
 }
@@ -834,7 +1048,7 @@ function applyWalker(persist = true) {
     walkerStatusLabel.textContent = 'Off';
   } else if (settings.walkerDensity === 'single') {
     const hero = HEROES[settings.walkerHero] || HEROES.warrior;
-    activeWalkers = [createWalkerEntity(settings.walkerHero, 12, 1)];
+    activeWalkers = [createWalkerEntity(settings.walkerHero, 12, 1, 12)];
     walkerStatusLabel.textContent = hero.name;
     startWalkers();
   } else if (settings.walkerDensity === 'all') {
@@ -845,10 +1059,12 @@ function applyWalker(persist = true) {
     const size = 48;
     const perimeter = 2 * (Math.max(10, w - 2 * inset - size) + Math.max(10, h - 2 * inset - size));
     const step = perimeter / keys.length;
+    const floorSpan = Math.max(10, w - 2 * inset - size);
+    const floorStep = floorSpan / keys.length;
 
     activeWalkers = keys.map((key, idx) => {
       const initialDir = idx % 2 === 0 ? 1 : -1;
-      return createWalkerEntity(key, idx * step, initialDir);
+      return createWalkerEntity(key, idx * step, initialDir, inset + idx * floorStep);
     });
     walkerStatusLabel.textContent = 'All Party (6)';
     startWalkers();

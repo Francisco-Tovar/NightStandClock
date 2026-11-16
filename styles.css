@@ -41,13 +41,40 @@
   left: 0;
   width: 48px;
   height: 48px;
+  transform-origin: center bottom;
   pointer-events: auto;
   cursor: pointer;
   will-change: transform;
   opacity: var(--clock-opacity);
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease, filter 0.3s ease;
   user-select: none;
   -webkit-user-select: none;
+}
+
+.walker-entity.is-boss {
+  z-index: 55;
+  filter: drop-shadow(0 0 6px rgba(255, 59, 48, 0.85));
+}
+
+.boss-hp-bar {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  width: 34px;
+  height: 4px;
+  margin-left: -17px;
+  background: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.boss-hp-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ff3b30, #ff9500);
+  transition: width 0.18s ease;
 }
 
 .walker-entity-img {
