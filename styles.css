@@ -410,6 +410,11 @@ html, body {
   pointer-events: auto;
 }
 
+:fullscreen .settings-drawer,
+:-webkit-full-screen .settings-drawer {
+  max-height: calc(100dvh - 76px);
+}
+
 .drawer-header {
   display: flex;
   align-items: center;

@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.6';
+const APP_VERSION = 'v1.4.7';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -1153,7 +1153,7 @@ function isFullscreen() {
 }
 
 function enterFullscreen() {
-  if (isFullscreen()) {
+  if (isFullscreen() || window.matchMedia('(display-mode: fullscreen)').matches) {
     return;
   }
   const docEl = document.documentElement;
@@ -1536,12 +1536,11 @@ document.addEventListener('pointerup', (e) => {
     return;
   }
 
-  if (settings.hideTopBar && !isFullscreen()) {
-    enterFullscreen();
-  }
-
   if (isSettingsOpen()) {
     closeSettings();
+    if (settings.hideTopBar && !isFullscreen()) {
+      enterFullscreen();
+    }
   } else {
     openSettings();
   }
