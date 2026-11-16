@@ -1,4 +1,4 @@
-const APP_VERSION = 'v1.4.4';
+const APP_VERSION = 'v1.4.5';
 
 const DEFAULT_SETTINGS = {
   color: '#FF2D20',
@@ -16,7 +16,8 @@ const DEFAULT_SETTINGS = {
   gifPos: 'right',
   walkerDensity: 'off',
   walkerHero: 'warrior',
-  walkerMode: 'perimeter'
+  walkerMode: 'perimeter',
+  walkerScale: 100
 };
 
 const FONT_MAP = {
@@ -182,6 +183,8 @@ const walkerStatusLabel = document.getElementById('walker-status-label');
 const walkerModeButtons = document.querySelectorAll('#walker-mode-options .segment-btn');
 const walkerDensityButtons = document.querySelectorAll('#walker-density-options .segment-btn');
 const walkerHeroButtons = document.querySelectorAll('#walker-hero-presets .preset-pill-btn');
+const walkerScaleSlider = document.getElementById('walker-scale-slider');
+const walkerScaleValue = document.getElementById('walker-scale-value');
 
 const checkUpdateBtn = document.getElementById('check-update-btn');
 const checkUpdateText = document.getElementById('check-update-text');
@@ -741,6 +744,7 @@ function startBossBattle() {
 
   const offsets = [-72, 72, -56, 56, -88, 88];
   let slot = 0;
+
   for (let i = 0; i < activeWalkers.length; i++) {
     const wkr = activeWalkers[i];
     if (wkr !== boss) {
@@ -842,6 +846,8 @@ function updateWalkers(timestamp) {
       }
     }
   }
+
+  const globalScale = Math.min(1.75, Math.max(0.75, (settings.walkerScale || 100) / 100));
 
   for (let i = 0; i < activeWalkers.length; i++) {
     const wkr = activeWalkers[i];
@@ -980,7 +986,8 @@ function updateWalkers(timestamp) {
 
       wkr.currentX = x;
       wkr.currentY = y;
-      wkr.domEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip * wkr.scale}) scaleY(${wkr.scale})`;
+      const totalScale = wkr.scale * globalScale;
+      wkr.domEl.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rot}deg) scaleX(${flip * totalScale}) scaleY(${totalScale})`;
       if (wkr.hpBar) {
         wkr.hpBar.style.transform = `scaleX(${flip})`;
       }
@@ -988,7 +995,8 @@ function updateWalkers(timestamp) {
       const y = h - inset - size;
       wkr.currentX = wkr.floorX;
       wkr.currentY = y;
-      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.direction * wkr.scale}) scaleY(${wkr.scale})`;
+      const totalScale = wkr.scale * globalScale;
+      wkr.domEl.style.transform = `translate3d(${wkr.floorX}px, ${y}px, 0) scaleX(${wkr.direction * totalScale}) scaleY(${totalScale})`;
       if (wkr.hpBar) {
         wkr.hpBar.style.transform = `scaleX(${wkr.direction})`;
       }
@@ -1099,6 +1107,20 @@ function applyWalker(persist = true) {
   }
 }
 
+function applyWalkerScale(val, persist = true) {
+  const num = Math.min(175, Math.max(75, parseInt(val, 10) || 100));
+  settings.walkerScale = num;
+  if (walkerScaleSlider) {
+    walkerScaleSlider.value = num;
+  }
+  if (walkerScaleValue) {
+    walkerScaleValue.textContent = `${num}%`;
+  }
+  if (persist) {
+    saveSettings();
+  }
+}
+
 function isFullscreen() {
   return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
 }
@@ -1184,6 +1206,7 @@ function initUI() {
   applyTopBar(false);
   applyGif(false);
   applyWalker(false);
+  applyWalkerScale(settings.walkerScale, false);
   updateFullscreenUI();
   updateTime();
 }
@@ -1304,6 +1327,19 @@ walkerHeroButtons.forEach(btn => {
     resetHideTimer();
   });
 });
+
+if (walkerScaleSlider) {
+  walkerScaleSlider.addEventListener('input', (e) => {
+    e.stopPropagation();
+    applyWalkerScale(e.target.value, false);
+    resetHideTimer();
+  });
+  walkerScaleSlider.addEventListener('change', (e) => {
+    e.stopPropagation();
+    applyWalkerScale(e.target.value, true);
+    resetHideTimer();
+  });
+}
 
 topbarButtons.forEach(btn => {
   btn.addEventListener('click', (e) => {

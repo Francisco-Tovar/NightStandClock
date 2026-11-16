@@ -262,12 +262,24 @@
           <button type="button" class="preset-pill-btn" data-hero="centaur">Centaur</button>
           <button type="button" class="preset-pill-btn" data-hero="cat">Cat</button>
         </div>
+        <div class="dim-brightness-row">
+          <div class="slider-wrapper">
+            <svg class="slider-icon" viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <polyline points="9 21 3 21 3 15"></polyline>
+              <line x1="21" y1="3" x2="14" y2="10"></line>
+              <line x1="3" y1="21" x2="10" y2="14"></line>
+            </svg>
+            <input type="range" id="walker-scale-slider" min="75" max="175" value="100" step="5" aria-label="Character size">
+          </div>
+          <span id="walker-scale-value" class="setting-value">100%</span>
+        </div>
       </div>
 
       <div class="setting-item full-width-sm">
         <div class="setting-title-row">
           <span class="setting-title">App Updates</span>
-          <span id="update-status-label" class="setting-value">v1.4.4</span>
+          <span id="update-status-label" class="setting-value">v1.4.5</span>
         </div>
         <div class="update-controls">
           <button type="button" id="check-update-btn" class="action-btn update-btn">
@@ -287,6 +299,6 @@
     </div>
   </aside>
 
-  <script src="app.js?v=1.4.4"></script>
+  <script src="app.js?v=1.4.5"></script>
 </body>
 </html>
